@@ -1,0 +1,7 @@
+Flask
+Flask-SQLAlchemy
+gunicorn
+python-dotenv
+requests
+python-telegram-bot
+boto3

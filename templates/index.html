@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>KISIK MARKET | Без передплати</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; color: white; font-family: system-ui, -apple-system, sans-serif; }
+        .gradient-text { background: linear-gradient(135deg, #ff6b35, #ffb347); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .product-card { background: #14141c; border-radius: 24px; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; border: 1px solid rgba(255,107,53,0.2); cursor: pointer; position: relative; }
+        .product-card:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(255,107,53,0.2); border-color: #ff6b35; }
+        .category-btn { padding: 10px 24px; border-radius: 40px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: all 0.2s; font-weight: 600; font-size: 14px; white-space: nowrap; }
+        .category-btn.active, .category-btn:hover { background: #ff6b35; border-color: #ff6b35; }
+        .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); z-index: 1000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+        .cart-badge { position: absolute; top: -5px; right: -5px; background: #ff6b35; color: white; font-size: 10px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #ff6b35; padding: 12px 24px; border-radius: 40px; z-index: 1100; animation: fadeInUp 0.3s ease; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        input, select, textarea { outline: none; }
+        input:focus, select:focus, textarea:focus { border-color: #ff6b35 !important; }
+        .skeleton { background: linear-gradient(90deg, #1a1a24 25%, #2a2a35 50%, #1a1a24 75%); background-size: 200% 100%; animation: skeleton 1.5s infinite; border-radius: 20px; height: 320px; }
+        @keyframes skeleton { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .order-status-new { background: rgba(59,130,246,0.2); color: #3b82f6; }
+        .order-status-completed { background: rgba(16,185,129,0.2); color: #10b981; }
+        .loading-spinner { border: 3px solid rgba(255,107,53,0.3); border-top: 3px solid #ff6b35; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .favorite-icon { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.5); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; transition: all 0.2s; backdrop-filter: blur(4px); }
+        .favorite-icon:hover { transform: scale(1.1); background: rgba(0,0,0,0.7); }
+        .favorite-icon i { font-size: 18px; }
+        .favorite-icon i.fa-heart { color: #ef4444; }
+
+        .star-rating-small { display: inline-flex; gap: 2px; }
+        .star-rating-small i { font-size: 12px; color: #ffb347; }
+        
+        .search-result-item { transition: all 0.2s; }
+        .search-result-item:hover { background: rgba(255,107,53,0.1); }
+        
+        /* Адаптивний хедер для мобільних */
+        @media (max-width: 768px) {
+            .header-container { padding: 12px 16px; }
+            .logo h1 { font-size: 1.2rem; }
+            .logo p { font-size: 8px; }
+            .logo-icon { font-size: 28px; }
+            .header-buttons { gap: 8px; }
+            .auth-btn { padding: 6px 12px; font-size: 12px; }
+            .cart-btn { padding: 8px; }
+            .user-menu-btn { padding: 6px 10px; }
+            .user-menu-btn span { display: none; }
+            .category-btn { padding: 6px 16px; font-size: 12px; white-space: nowrap; }
+            .categories-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+        }
+        
+        @media (max-width: 480px) {
+            .logo h1 { font-size: 1rem; }
+            .logo-icon { font-size: 24px; }
+            .header-buttons { gap: 6px; }
+            .auth-btn { padding: 5px 10px; font-size: 11px; }
+        }
+        
+        /* Стилі для кнопок в хедері */
+        .header-buttons { display: flex; align-items: center; gap: 12px; }
+        .cart-btn { position: relative; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 50%; transition: all 0.2s; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; }
+        .cart-btn:hover { background: rgba(255,255,255,0.2); }
+        .auth-btn { border-radius: 9999px; transition: all 0.2s; font-weight: 500; }
+        .user-menu-btn { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.1); border-radius: 9999px; transition: all 0.2s; }
+        
+        /* Контейнер для категорій з горизонтальним скролом на мобільних */
+        .categories-wrapper { width: 100%; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+        .categories-container { display: flex; gap: 12px; padding-bottom: 4px; min-width: min-content; }
+    </style>
+</head>
+<body>
+    <header class="sticky top-0 z-50 bg-black/60 backdrop-blur-xl border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4 header-container">
+            <div class="flex justify-between items-center">
+                <a href="/" class="flex items-center gap-2 sm:gap-3 logo flex-shrink-0">
+                    <div class="logo-icon text-3xl sm:text-4xl">🐱</div>
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-black"><span class="gradient-text">KISIK</span> MARKET</h1>
+                        <p class="text-[8px] sm:text-[10px] font-bold text-orange-400">✨ Працюємо без передплати ✨</p>
+                    </div>
+                </a>
+
+                <div class="header-buttons">
+                    <button onclick="toggleCart()" class="cart-btn relative">
+                        <i class="fas fa-shopping-cart text-base sm:text-lg"></i>
+                        <span id="cartCount" class="cart-badge hidden">0</span>
+                    </button>
+
+                    <a href="/admin" id="adminPanelBtn" class="hidden bg-purple-600/20 hover:bg-purple-600/30 px-2 sm:px-3 py-2 rounded-full transition text-sm">
+                        <i class="fas fa-crown"></i> <span class="hidden sm:inline">Admin</span>
+                    </a>
+
+                    <div id="authButtons" class="flex gap-1 sm:gap-2">
+                        <button onclick="openAuth('login')" class="auth-btn px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/10 text-xs sm:text-sm hover:bg-white/20 transition whitespace-nowrap">Вхід</button>
+                        <button onclick="openAuth('register')" class="auth-btn px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-orange-500 text-xs sm:text-sm hover:bg-orange-600 transition whitespace-nowrap">Реєстрація</button>
+                    </div>
+
+                    <div id="userMenu" class="hidden relative">
+                        <button onclick="toggleUserMenu()" class="user-menu-btn px-2 sm:px-3 py-1.5 sm:py-2 rounded-full">
+                            <i class="fas fa-user"></i>
+                            <span id="userName" class="text-sm hidden sm:inline max-w-[80px] truncate"></span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        <div id="userDropdown" class="hidden absolute right-0 mt-2 bg-slate-800 rounded-xl shadow-xl w-48 z-50">
+                            <button onclick="showOrders()" class="w-full text-left px-4 py-2 text-sm hover:bg-white/10">📦 Мої замовлення</button>
+                            <button onclick="showFavorites()" class="w-full text-left px-4 py-2 text-sm hover:bg-white/10">❤️ Обране</button>
+                            <hr class="border-white/10">
+                            <button onclick="logout()" class="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-white/10">🚪 Вийти</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <div class="text-center mb-12">
+            <div class="text-8xl mb-4 animate-bounce">🐱</div>
+            <h2 class="text-4xl md:text-6xl font-black gradient-text mb-2">KISIK MARKET</h2>
+            <p class="text-xl text-orange-400 font-bold">✨ Працюємо без передплати ✨</p>
+            <p class="text-gray-400 mt-2 max-w-2xl mx-auto">Брендовий одяг. Доставка Новою Поштою по всій Україні</p>
+        </div>
+
+        <!-- Блок пошуку -->
+        <div class="max-w-2xl mx-auto mb-8 relative">
+            <div class="relative">
+                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <input type="text" 
+                       id="searchInput" 
+                       placeholder="🔍 Пошук товарів..." 
+                       class="w-full bg-slate-800 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition outline-none">
+                <button id="searchClearBtn" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white hidden">
+                    <i class="fas fa-times-circle"></i>
+                </button>
+            </div>
+            
+            <!-- Результати пошуку (автопідстановка) -->
+            <div id="searchResults" class="absolute top-full left-0 right-0 mt-2 bg-slate-800 rounded-2xl border border-white/10 shadow-2xl z-50 hidden max-h-96 overflow-y-auto">
+                <div id="searchResultsList"></div>
+            </div>
+        </div>
+
+        <!-- Категорії з горизонтальним скролом -->
+        <div class="categories-wrapper mb-12">
+            <div id="categoriesContainer" class="categories-container justify-start md:justify-center">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+
+        <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+        </div>
+    </main>
+
+    <!-- Модалка кошика -->
+    <div id="cartModal" class="modal hidden">
+        <div class="bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-4 sm:p-6 mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl sm:text-2xl font-black"><i class="fas fa-shopping-cart text-orange-500"></i> Кошик</h2>
+                <button onclick="toggleCart()" class="text-gray-400 text-2xl hover:text-white">&times;</button>
+            </div>
+            <div id="cartItems"></div>
+            <div id="cartEmpty" class="text-center py-10 text-gray-400 hidden">🛒 Кошик порожній</div>
+            <div id="cartSummary" class="border-t border-white/10 pt-4 hidden">
+                <div class="flex justify-between text-xl font-bold mb-4">
+                    <span>До сплати:</span>
+                    <span id="cartTotal" class="text-orange-500">0 грн</span>
+                </div>
+                <button onclick="openCheckout()" class="w-full bg-orange-500 py-3 rounded-xl font-bold hover:bg-orange-600 transition">Оформити замовлення</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модалка оформлення замовлення -->
+    <div id="checkoutModal" class="modal hidden">
+        <div class="bg-slate-900 rounded-3xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-4 sm:p-6 mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl sm:text-2xl font-black">Оформлення замовлення</h2>
+                <button onclick="closeCheckout()" class="text-gray-400 text-2xl hover:text-white">&times;</button>
+            </div>
+            <form id="checkoutForm">
+                <input type="text" id="checkoutName" placeholder="ПІБ *" required class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 mb-3 text-white">
+                <input type="tel" id="checkoutPhone" placeholder="Номер телефону *" required class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 mb-3 text-white">
+                <input type="email" id="checkoutEmail" placeholder="Email (необов'язково)" class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 mb-3 text-white">
+                <input type="text" id="checkoutCity" placeholder="Місто *" required class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 mb-3 text-white">
+
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Спосіб оплати *</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-3 p-3 bg-slate-800 rounded-xl cursor-pointer hover:bg-slate-700">
+                            <input type="radio" name="paymentMethod" value="full" checked class="w-4 h-4 text-orange-500">
+                            <span><i class="fas fa-credit-card text-green-400"></i> Повна оплата (онлайн)</span>
+                        </label>
+                        <label class="flex items-center gap-3 p-3 bg-slate-800 rounded-xl cursor-pointer hover:bg-slate-700">
+                            <input type="radio" name="paymentMethod" value="partial" class="w-4 h-4 text-orange-500">
+                            <span><i class="fas fa-percent text-yellow-400"></i> Часткова оплата (30% передплата)</span>
+                        </label>
+                        <label class="flex items-center gap-3 p-3 bg-slate-800 rounded-xl cursor-pointer hover:bg-slate-700">
+                            <input type="radio" name="paymentMethod" value="post" class="w-4 h-4 text-orange-500">
+                            <span><i class="fas fa-truck text-blue-400"></i> Оплата на пошті</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Адреса відділення Нової Пошти *</label>
+                    <textarea id="checkoutAddress" rows="3" placeholder="Наприклад: м. Київ, вул. Хрещатик, 22, Нова Пошта №5" required class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 text-white resize-none"></textarea>
+                    <p class="text-xs text-gray-400 mt-1">Вкажіть місто, вулицю, номер відділення або поштомату</p>
+                </div>
+
+                <button type="submit" class="w-full bg-orange-500 py-3 rounded-xl font-bold hover:bg-orange-600 transition">✅ Підтвердити замовлення</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модалка авторизації -->
+    <div id="authModal" class="modal hidden">
+        <div class="bg-slate-900 rounded-3xl max-w-md w-full p-6 sm:p-8 mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="authTitle" class="text-xl sm:text-2xl font-black">Вхід</h3>
+                <button onclick="closeAuth()" class="text-gray-400 text-2xl hover:text-white">&times;</button>
+            </div>
+            <form id="authForm">
+                <input type="hidden" id="authMode" value="login">
+                <input type="text" id="authUsername" placeholder="Логін" required class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 mb-4 text-white focus:border-orange-500">
+                <input type="password" id="authPassword" placeholder="Пароль" required class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 mb-4 text-white focus:border-orange-500">
+                <button type="submit" class="w-full bg-orange-500 py-3 rounded-xl font-bold hover:bg-orange-600 transition">Увійти</button>
+                <p class="text-center text-sm text-gray-400 mt-4">
+                    <span id="authSwitchText">Немає акаунту?</span>
+                    <button type="button" onclick="switchAuthMode()" class="text-orange-500 ml-1">Зареєструватись</button>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модалка замовлень користувача -->
+    <div id="ordersModal" class="modal hidden">
+        <div class="bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-4 sm:p-6 mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl sm:text-2xl font-black">📦 Мої замовлення</h2>
+                <button onclick="closeOrders()" class="text-gray-400 text-2xl hover:text-white">&times;</button>
+            </div>
+            <div id="ordersList"></div>
+        </div>
+    </div>
+
+    <!-- Модалка обраного -->
+    <div id="favoritesModal" class="modal hidden">
+        <div class="bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-4 sm:p-6 mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl sm:text-2xl font-black"><i class="fas fa-heart text-red-500"></i> Обрані товари</h2>
+                <button onclick="closeFavorites()" class="text-gray-400 text-2xl hover:text-white">&times;</button>
+            </div>
+            <div id="favoritesList"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let cartItems = [];
+        let products = [];
+        let categories = [];
+        let currentCategory = 'all';
+        let favoriteIds = [];
+
+        async function api(url, options = {}) {
+            try {
+                const res = await fetch(url, {
+                    ...options,
+                    headers: { 'Content-Type': 'application/json', ...options.headers }
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Помилка');
+                }
+                return res.json();
+            } catch(e) {
+                console.error('API Error:', e);
+                throw e;
+            }
+        }
+
+        function showToast(msg, isError = false) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = msg;
+            if (isError) toast.style.background = '#ef4444';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        async function loadUser() {
+            try {
+                const data = await api('/api/me');
+                if (data.user) {
+                    currentUser = data.user;
+                    document.getElementById('authButtons').classList.add('hidden');
+                    document.getElementById('userMenu').classList.remove('hidden');
+                    document.getElementById('userName').textContent = currentUser.username;
+
+                    if (currentUser.is_admin) {
+                        const adminBtn = document.getElementById('adminPanelBtn');
+                        if (adminBtn) adminBtn.classList.remove('hidden');
+                    }
+                    await loadFavorites();
+                } else {
+                    currentUser = null;
+                    document.getElementById('authButtons').classList.remove('hidden');
+                    document.getElementById('userMenu').classList.add('hidden');
+                    const adminBtn = document.getElementById('adminPanelBtn');
+                    if (adminBtn) adminBtn.classList.add('hidden');
+                    favoriteIds = [];
+                }
+            } catch(e) {
+                console.error('loadUser error:', e);
+            }
+        }
+
+        async function loadFavorites() {
+            if (!currentUser) return;
+            try {
+                favoriteIds = await api('/api/favorites');
+            } catch(e) { console.error(e); }
+        }
+
+        async function toggleFavoriteGlobal(productId, event) {
+            event.stopPropagation();
+            if (!currentUser) {
+                showToast('Увійдіть в акаунт, щоб додати в обране', true);
+                openAuth('login');
+                return;
+            }
+
+            try {
+                const isFav = favoriteIds.includes(productId);
+                if (isFav) {
+                    await api(`/api/favorites/${productId}`, { method: 'DELETE' });
+                    favoriteIds = favoriteIds.filter(id => id !== productId);
+                    showToast('❤️ Видалено з обраного');
+                } else {
+                    await api(`/api/favorites/${productId}`, { method: 'POST' });
+                    favoriteIds.push(productId);
+                    showToast('💖 Додано в обране');
+                }
+                renderProducts();
+            } catch(e) {
+                showToast('❌ ' + e.message, true);
+            }
+        }
+
+        function openAuth(mode) {
+            document.getElementById('authMode').value = mode;
+            document.getElementById('authTitle').textContent = mode === 'login' ? 'Вхід' : 'Реєстрація';
+            const switchText = document.getElementById('authSwitchText');
+            const switchBtn = document.querySelector('#authForm .text-orange-500');
+            if (mode === 'login') {
+                switchText.textContent = 'Немає акаунту?';
+                if (switchBtn) switchBtn.textContent = 'Зареєструватись';
+            } else {
+                switchText.textContent = 'Вже є акаунт?';
+                if (switchBtn) switchBtn.textContent = 'Увійти';
+            }
+            document.getElementById('authModal').classList.remove('hidden');
+        }
+
+        function closeAuth() { document.getElementById('authModal').classList.add('hidden'); }
+
+        function switchAuthMode() {
+            const mode = document.getElementById('authMode').value;
+            openAuth(mode === 'login' ? 'register' : 'login');
+        }
+
+        document.getElementById('authForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const mode = document.getElementById('authMode').value;
+            const username = document.getElementById('authUsername').value;
+            const password = document.getElementById('authPassword').value;
+            try {
+                const endpoint = mode === 'login' ? '/api/login' : '/api/register';
+                await api(endpoint, { method: 'POST', body: JSON.stringify({ username, password }) });
+                showToast(mode === 'login' ? '✅ Вхід виконано' : '✅ Реєстрація успішна');
+                closeAuth();
+                await loadUser();
+                await loadCart();
+            } catch(e) { showToast('❌ ' + e.message, true); }
+        };
+
+        async function logout() {
+            await api('/api/logout', { method: 'POST' });
+            window.location.href = '/';
+        }
+
+        function toggleUserMenu() {
+            const dropdown = document.getElementById('userDropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        async function loadCategories() {
+            try {
+                categories = await api('/api/categories');
+                const container = document.getElementById('categoriesContainer');
+                if (!categories.length) {
+                    container.innerHTML = '<button onclick="setCategory(\'all\')" data-cat="all" class="category-btn active">🔥 Всі товари</button>';
+                    return;
+                }
+                container.innerHTML = `
+                    <button onclick="setCategory('all')" data-cat="all" class="category-btn active">🔥 Всі товари</button>
+                    ${categories.map(c => `<button onclick="setCategory('${escapeHtml(c.name)}')" data-cat="${escapeHtml(c.name)}" class="category-btn">${c.icon || '🏷️'} ${escapeHtml(c.name)}</button>`).join('')}
+                `;
+            } catch(e) {
+                console.error(e);
+                document.getElementById('categoriesContainer').innerHTML = '<div class="text-red-400">Помилка завантаження категорій</div>';
+            }
+        }
+
+        async function loadProducts() {
+            try {
+                const url = currentCategory === 'all' ? '/api/products' : `/api/products?category=${encodeURIComponent(currentCategory)}`;
+                products = await api(url);
+                renderProducts();
+            } catch(e) {
+                console.error(e);
+                document.getElementById('productsGrid').innerHTML = '<div class="col-span-full text-center text-red-500">❌ Помилка завантаження товарів</div>';
+            }
+        }
+
+        function renderStars(rating) {
+            const fullStars = Math.floor(rating);
+            const hasHalf = rating % 1 >= 0.5;
+            let stars = '';
+            for (let i = 0; i < fullStars; i++) stars += '<i class="fas fa-star"></i>';
+            if (hasHalf) stars += '<i class="fas fa-star-half-alt"></i>';
+            for (let i = stars.length; i < 5; i++) stars += '<i class="far fa-star"></i>';
+            return stars;
+        }
+
+        function renderProducts() {
+            const grid = document.getElementById('productsGrid');
+            if (!products.length) {
+                grid.innerHTML = '<div class="col-span-full text-center text-gray-400 py-20">📭 Товарів поки немає</div>';
+                return;
+            }
+            grid.innerHTML = products.map(p => {
+                const isFavorited = favoriteIds.includes(p.id);
+                return `
+                <div class="product-card" onclick="location.href='/product/${p.id}'">
+                    <div class="favorite-icon" onclick="toggleFavoriteGlobal(${p.id}, event)">
+                        <i class="${isFavorited ? 'fas' : 'far'} fa-heart"></i>
+                    </div>
+                    <img src="${p.photos[0] || 'https://placehold.co/400x400?text=KISIK'}" class="w-full h-64 object-cover" onerror="this.src='https://placehold.co/400x400?text=KISIK'">
+                    <div class="p-4">
+                        <h3 class="font-bold text-lg">${escapeHtml(p.name)}</h3>
+                        <div class="flex items-center gap-1 text-yellow-400 text-sm my-1">
+                            ${renderStars(p.rating_avg || 0)}
+                            <span class="text-gray-500 text-xs ml-1">(${p.rating_count || 0})</span>
+                        </div>
+                        <p class="text-orange-400 font-bold text-xl my-2">${p.price} грн</p>
+                        <div class="flex gap-2 mt-2">
+                            ${p.sizes.slice(0, 3).map(s => `<span class="text-xs bg-white/10 px-2 py-1 rounded">${s}</span>`).join('')}
+                            ${p.sizes.length > 3 ? `<span class="text-xs bg-white/10 px-2 py-1 rounded">+${p.sizes.length - 3}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        function setCategory(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.querySelector(`.category-btn[data-cat="${cat}"]`);
+            if (activeBtn) activeBtn.classList.add('active');
+            loadProducts();
+        }
+
+        async function loadCart() {
+            try {
+                cartItems = await api('/api/cart');
+                updateCartUI();
+            } catch(e) { console.error(e); }
+        }
+
+        function updateCartUI() {
+            const count = cartItems.reduce((s, i) => s + i.quantity, 0);
+            const badge = document.getElementById('cartCount');
+            if (count > 0) { badge.textContent = count; badge.classList.remove('hidden'); }
+            else { badge.classList.add('hidden'); }
+        }
+
+        function toggleCart() { renderCart(); document.getElementById('cartModal').classList.toggle('hidden'); }
+
+        async function renderCart() {
+            const container = document.getElementById('cartItems');
+            const empty = document.getElementById('cartEmpty');
+            const summary = document.getElementById('cartSummary');
+            if (!cartItems.length) {
+                container.innerHTML = ''; empty.classList.remove('hidden'); summary.classList.add('hidden');
+                return;
+            }
+            empty.classList.add('hidden'); summary.classList.remove('hidden');
+            let total = 0;
+            container.innerHTML = cartItems.map(item => {
+                total += item.price * item.quantity;
+                return `
+                    <div class="flex gap-4 p-4 bg-white/5 rounded-2xl mb-3">
+                        <img src="${item.photo || 'https://placehold.co/80'}" class="w-20 h-20 rounded-xl object-cover">
+                        <div class="flex-1">
+                            <h4 class="font-bold">${escapeHtml(item.name)}</h4>
+                            <p class="text-sm">Розмір: ${item.size}</p>
+                            ${item.color ? `<p class="text-sm">Колір: ${item.color}</p>` : ''}
+                            <p class="text-orange-400">${item.price} грн</p>
+                            <div class="flex items-center gap-2 mt-2">
+                                <button onclick="updateQty(${item.id}, ${item.quantity - 1})" class="w-8 h-8 bg-white/10 rounded-full">-</button>
+                                <span>${item.quantity}</span>
+                                <button onclick="updateQty(${item.id}, ${item.quantity + 1})" class="w-8 h-8 bg-white/10 rounded-full">+</button>
+                                <button onclick="removeItem(${item.id})" class="ml-auto text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('cartTotal').textContent = total + ' грн';
+        }
+
+        async function updateQty(id, qty) {
+            if (qty <= 0) { await removeItem(id); return; }
+            await api('/api/cart/update', { method: 'POST', body: JSON.stringify({ cart_item_id: id, quantity: qty }) });
+            await loadCart();
+            renderCart();
+        }
+
+        async function removeItem(id) {
+            await api(`/api/cart/${id}`, { method: 'DELETE' });
+            await loadCart();
+            renderCart();
+        }
+
+        function openCheckout() {
+            if (!cartItems.length) { showToast('Кошик порожній', true); return; }
+            toggleCart();
+            document.getElementById('checkoutModal').classList.remove('hidden');
+        }
+
+        function closeCheckout() { document.getElementById('checkoutModal').classList.add('hidden'); }
+
+        document.getElementById('checkoutForm').onsubmit = async (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById('checkoutName').value.trim();
+            const phone = document.getElementById('checkoutPhone').value.trim();
+            const email = document.getElementById('checkoutEmail').value.trim();
+            const city = document.getElementById('checkoutCity').value.trim();
+            const warehouse_address = document.getElementById('checkoutAddress').value.trim();
+            const payment_method = document.querySelector('input[name="paymentMethod"]:checked').value;
+
+            if (!name || !phone || !city || !warehouse_address) {
+                showToast('❌ Заповніть всі обов\'язкові поля', true);
+                return;
+            }
+
+            const submitBtn = document.querySelector('#checkoutForm button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Відправка...';
+
+            try {
+                const data = await api('/api/checkout', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        name, phone, email, city, warehouse_address, payment_method
+                    })
+                });
+
+                showToast(`✅ Замовлення №${data.order_number} створено! Дякуємо!`);
+                closeCheckout();
+                await loadCart();
+                renderCart();
+
+                document.getElementById('checkoutName').value = '';
+                document.getElementById('checkoutPhone').value = '';
+                document.getElementById('checkoutEmail').value = '';
+                document.getElementById('checkoutCity').value = '';
+                document.getElementById('checkoutAddress').value = '';
+
+            } catch(e) {
+                showToast('❌ ' + e.message, true);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '✅ Підтвердити замовлення';
+            }
+        };
+
+        async function showOrders() {
+            if (!currentUser) { showToast('Увійдіть в акаунт', true); return; }
+            try {
+                const orders = await api('/api/orders');
+                const container = document.getElementById('ordersList');
+                if (!orders.length) {
+                    container.innerHTML = '<div class="text-center py-10 text-gray-400">📭 У вас ще немає замовлень</div>';
+                } else {
+                    container.innerHTML = orders.map(o => `
+                        <div class="bg-white/5 rounded-2xl p-4 mb-3">
+                            <div class="flex justify-between items-start">
+                                <span class="font-mono text-orange-400">№${o.order_number}</span>
+                                <span class="text-xs px-2 py-1 rounded-full ${o.status === 'new' ? 'order-status-new' : 'order-status-completed'}">
+                                    ${o.status === 'new' ? '🆕 Нове' : '✅ Виконано'}
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-400 mt-2">📅 ${new Date(o.created_at).toLocaleDateString()}</p>
+                            <p class="font-bold mt-2">💰 ${o.total_price} грн</p>
+                            <div class="mt-2 text-sm text-gray-300">
+                                ${o.items.map(i => `• ${escapeHtml(i.name)} (${i.size})${i.color ? `, ${i.color}` : ''} x${i.quantity} = ${i.total} грн`).join('<br>')}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+                document.getElementById('ordersModal').classList.remove('hidden');
+                toggleUserMenu();
+            } catch(e) { showToast('❌ ' + e.message, true); }
+        }
+
+        function closeOrders() { document.getElementById('ordersModal').classList.add('hidden'); }
+
+        async function showFavorites() {
+            if (!currentUser) {
+                showToast('Увійдіть в акаунт', true);
+                return;
+            }
+            try {
+                if (!favoriteIds.length) {
+                    document.getElementById('favoritesList').innerHTML = '<div class="text-center py-10 text-gray-400">❤️ У вас ще немає обраних товарів</div>';
+                } else {
+                    const productsData = await Promise.all(favoriteIds.map(id => api(`/api/products/${id}`)));
+                    document.getElementById('favoritesList').innerHTML = productsData.map(p => `
+                        <div class="flex gap-4 p-4 bg-white/5 rounded-2xl mb-3 cursor-pointer" onclick="location.href='/product/${p.id}'">
+                            <img src="${p.photos[0] || 'https://placehold.co/80'}" class="w-20 h-20 rounded-xl object-cover">
+                            <div class="flex-1">
+                                <h4 class="font-bold">${escapeHtml(p.name)}</h4>
+                                <p class="text-orange-400 font-bold">${p.price} грн</p>
+                                <div class="flex text-yellow-400 text-sm mt-1">${renderStars(p.rating_avg || 0)}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+                document.getElementById('favoritesModal').classList.remove('hidden');
+                toggleUserMenu();
+            } catch(e) { showToast('❌ ' + e.message, true); }
+        }
+
+        function closeFavorites() { document.getElementById('favoritesModal').classList.add('hidden'); }
+
+        // ============ ПОШУК ТОВАРІВ ============
+        let searchTimeout = null;
+        const searchInput = document.getElementById('searchInput');
+        const searchResults = document.getElementById('searchResults');
+        const searchResultsList = document.getElementById('searchResultsList');
+        const searchClearBtn = document.getElementById('searchClearBtn');
+
+        async function searchProducts(query) {
+            if (!query || query.length < 2) {
+                searchResults.classList.add('hidden');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+                const products = await response.json();
+                
+                if (products.length === 0) {
+                    searchResultsList.innerHTML = '<div class="p-4 text-center text-gray-400">😔 Товарів не знайдено</div>';
+                    searchResults.classList.remove('hidden');
+                    return;
+                }
+                
+                searchResultsList.innerHTML = products.map(p => `
+                    <div class="search-result-item flex items-center gap-3 p-3 hover:bg-white/10 cursor-pointer transition border-b border-white/5 last:border-0"
+                         onclick="location.href='/product/${p.id}'">
+                        <img src="${p.photo || 'https://placehold.co/50'}" class="w-12 h-12 rounded-lg object-cover" onerror="this.src='https://placehold.co/50?text=KISIK'">
+                        <div class="flex-1">
+                            <div class="font-bold text-white">${escapeHtml(p.name)}</div>
+                            <div class="flex items-center gap-2 text-sm">
+                                <span class="text-orange-400 font-bold">${p.price} грн</span>
+                                <span class="text-gray-500">${escapeHtml(p.category)}</span>
+                            </div>
+                        </div>
+                        <i class="fas fa-arrow-right text-gray-500"></i>
+                    </div>
+                `).join('');
+                searchResults.classList.remove('hidden');
+                
+            } catch(e) {
+                console.error('Search error:', e);
+            }
+        }
+
+        function handleSearchInput() {
+            const query = searchInput.value.trim();
+            
+            if (query) {
+                searchClearBtn.classList.remove('hidden');
+            } else {
+                searchClearBtn.classList.add('hidden');
+            }
+            
+            if (searchTimeout) clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => searchProducts(query), 300);
+        }
+
+        function clearSearch() {
+            searchInput.value = '';
+            searchClearBtn.classList.add('hidden');
+            searchResults.classList.add('hidden');
+            searchInput.focus();
+        }
+
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('userMenu');
+            if (menu && !menu.contains(e.target) && !document.getElementById('userDropdown')?.contains(e.target)) {
+                document.getElementById('userDropdown')?.classList.add('hidden');
+            }
+            
+            if (searchInput && !searchInput.contains(e.target) && searchResults && !searchResults.contains(e.target)) {
+                searchResults.classList.add('hidden');
+            }
+        });
+
+        if (searchInput) {
+            searchInput.addEventListener('input', handleSearchInput);
+            searchInput.addEventListener('focus', () => {
+                if (searchInput.value.trim().length >= 2) {
+                    searchProducts(searchInput.value.trim());
+                }
+            });
+        }
+
+        if (searchClearBtn) {
+            searchClearBtn.addEventListener('click', clearSearch);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+        }
+
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
+        });
+
+        async function init() {
+            await loadUser();
+            await loadCategories();
+            await loadProducts();
+            await loadCart();
+        }
+
+        init();
+    </script>
+</body>
+</html>
