@@ -91,7 +91,7 @@ def send_order_notification(order_id, items_data):
                 return
 
             # Базовий URL для посилань - ЗМІНІТЬ НА ВАШ РЕАЛЬНИЙ ДОМЕН У ПРОДАКШЕНІ
-            base_url = "https://furious1008.pythonanywhere.com/"
+            base_url = "https://kisikshop.onrender.com/"
 
             payment_text = {
                 'full': '💳 Повна оплата',
