@@ -36,6 +36,10 @@ app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 
 db = SQLAlchemy(app)
 
+# ============ TELEGRAM КОНФІГ ДЛЯ КНОПКИ ЗВ'ЯЗКУ ============
+TELEGRAM_SUPPORT_CHAT_ID = "807319863"  # ID чату менеджера (можна змінити)
+TELEGRAM_BOT_LINK = "https://t.me/kisik_support_bot"  # Посилання на бота або чат
+
 # ============ CLOUDFLARE R2 КОНФІГУРАЦІЯ ============
 R2_ACCOUNT_ID = "71580147ba20088caf6fa682a7e8edf2"
 R2_PUBLIC_ACCOUNT_ID = "1fdfbb000ddb47c083bd7d336943d068"
@@ -90,7 +94,6 @@ def send_order_notification(order_id, items_data):
                 logger.error(f"Order {order_id} not found")
                 return
 
-            # Базовий URL для посилань - ЗМІНІТЬ НА ВАШ РЕАЛЬНИЙ ДОМЕН У ПРОДАКШЕНІ
             base_url = "https://kisikshop.onrender.com/"
 
             payment_text = {
@@ -662,7 +665,6 @@ def search_products():
     if not query or len(query) < 2:
         return jsonify([])
 
-    # Пошук за назвою товару
     products = Product.query.filter(Product.name.ilike(f'%{query}%')).limit(10).all()
 
     return jsonify([{
@@ -911,7 +913,6 @@ def checkout():
     CartItem.query.filter_by(session_id=session_id).delete()
     db.session.commit()
 
-    # Відправляємо сповіщення в окремому потоці
     thread = threading.Thread(target=send_order_notification, args=(order.id, items_list))
     thread.daemon = True
     thread.start()
@@ -929,7 +930,7 @@ def get_orders():
         'items': json.loads(o.items) if o.items else []
     } for o in orders])
 
-# ============ API АДМІН ============
+# ============ API АДМІН (РОЗШИРЕНІ МОЖЛИВОСТІ) ============
 @app.route('/api/admin/orders', methods=['GET'])
 @admin_required
 def admin_get_orders():
@@ -951,6 +952,16 @@ def admin_update_order_status(order_id):
         return jsonify({'error': 'Замовлення не знайдено'}), 404
     data = request.json
     order.status = data.get('status', order.status)
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+@app.route('/api/admin/orders/<int:order_id>', methods=['DELETE'])
+@admin_required
+def admin_delete_order(order_id):
+    order = db.session.get(Order, order_id)
+    if not order:
+        return jsonify({'error': 'Замовлення не знайдено'}), 404
+    db.session.delete(order)
     db.session.commit()
     return jsonify({'status': 'ok'})
 
@@ -980,6 +991,62 @@ def admin_set_user_role(user_id):
     db.session.commit()
     return jsonify({'status': 'ok'})
 
+@app.route('/api/admin/users/<int:user_id>', methods=['DELETE'])
+@admin_required
+def admin_delete_user(user_id):
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({'error': 'Користувача не знайдено'}), 404
+    if user.username == 'admin':
+        return jsonify({'error': 'Не можна видалити головного адміністратора'}), 400
+    
+    # Видаляємо всі пов'язані дані
+    Favorite.query.filter_by(user_id=user_id).delete()
+    Review.query.filter_by(user_id=user_id).delete()
+    Order.query.filter_by(user_id=user_id).update({'user_id': None})
+    
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+@app.route('/api/admin/reviews/<int:review_id>', methods=['PUT'])
+@admin_required
+def admin_update_review(review_id):
+    review = db.session.get(Review, review_id)
+    if not review:
+        return jsonify({'error': 'Відгук не знайдено'}), 404
+    
+    data = request.json
+    old_rating = review.rating
+    new_rating = data.get('rating', old_rating)
+    new_comment = data.get('comment', review.comment)
+    
+    if new_rating != old_rating:
+        product = db.session.get(Product, review.product_id)
+        if product:
+            product.rating_sum = product.rating_sum - old_rating + new_rating
+    
+    review.rating = new_rating
+    review.comment = new_comment
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+@app.route('/api/admin/reviews/<int:review_id>', methods=['DELETE'])
+@admin_required
+def admin_delete_review(review_id):
+    review = db.session.get(Review, review_id)
+    if not review:
+        return jsonify({'error': 'Відгук не знайдено'}), 404
+    
+    product = db.session.get(Product, review.product_id)
+    if product:
+        product.rating_sum -= review.rating
+        product.rating_count -= 1
+    
+    db.session.delete(review)
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
 @app.route('/api/admin/stats', methods=['GET'])
 @admin_required
 def admin_get_stats():
@@ -987,9 +1054,12 @@ def admin_get_stats():
     total_users = User.query.count()
     total_products = Product.query.count()
     total_revenue = db.session.query(func.sum(Order.total_price)).scalar() or 0
+    new_orders = Order.query.filter_by(status='new').count()
+    completed_orders = Order.query.filter_by(status='completed').count()
     return jsonify({
         'total_orders': total_orders, 'total_users': total_users,
-        'total_products': total_products, 'total_revenue': float(total_revenue)
+        'total_products': total_products, 'total_revenue': float(total_revenue),
+        'new_orders': new_orders, 'completed_orders': completed_orders
     })
 
 @app.route('/api/admin/database', methods=['GET'])
@@ -1010,7 +1080,7 @@ def admin_get_database():
         'products': [{'id': p.id, 'name': p.name, 'category': p.category, 'price': p.price, 'brand': p.brand, 'material': p.material, 'size_chart_url': p.size_chart_url, 'rating_avg': p.rating_avg} for p in products],
         'orders': [{'id': o.id, 'order_number': o.order_number, 'user_name': o.user_name, 'total_price': o.total_price, 'status': o.status} for o in orders],
         'cart_items': [{'id': c.id, 'product_id': c.product_id, 'size': c.size, 'color': c.color, 'quantity': c.quantity} for c in cart_items],
-        'reviews': [{'id': r.id, 'product_id': r.product_id, 'user_name': r.user_name, 'rating': r.rating, 'comment': r.comment} for r in reviews],
+        'reviews': [{'id': r.id, 'product_id': r.product_id, 'user_name': r.user_name, 'rating': r.rating, 'comment': r.comment, 'created_at': r.created_at.isoformat()} for r in reviews],
         'favorites': [{'id': f.id, 'user_id': f.user_id, 'product_id': f.product_id} for f in favorites],
         'statistics': {
             'total_categories': len(categories), 'total_colors': len(colors),
@@ -1018,6 +1088,14 @@ def admin_get_database():
             'total_orders': len(orders), 'total_cart_items': len(cart_items),
             'total_reviews': len(reviews), 'total_favorites': len(favorites)
         }
+    })
+
+# ============ API ДЛЯ КНОПКИ ТЕЛЕГРАМ ============
+@app.route('/api/telegram-config', methods=['GET'])
+def get_telegram_config():
+    return jsonify({
+        'support_chat_id': TELEGRAM_SUPPORT_CHAT_ID,
+        'bot_link': TELEGRAM_BOT_LINK
     })
 
 # ============ ТЕСТОВИЙ МАРШРУТ ============
