@@ -107,6 +107,9 @@
         @keyframes fadeInUp { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
         
         .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); z-index: 1000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+        
+        /* Стилі для модалки редагування замовлення */
+        .order-edit-modal .order-items-list { max-height: 300px; overflow-y: auto; }
     </style>
 </head>
 <body class="p-4 md:p-6">
@@ -318,6 +321,64 @@
         </div>
     </div>
 
+    <!-- Модалка редагування замовлення -->
+    <div id="editOrderModal" class="modal hidden order-edit-modal">
+        <div class="bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-black">✏️ Редагування замовлення</h2>
+                <button onclick="closeEditOrderModal()" class="text-gray-400 text-2xl hover:text-white">&times;</button>
+            </div>
+            <div class="mb-4">
+                <p class="text-orange-400 font-mono text-lg">№ <span id="editOrderNumber"></span></p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-bold mb-2">ПІБ</label>
+                    <input type="text" id="editOrderName" class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-2">Телефон</label>
+                    <input type="text" id="editOrderPhone" class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-2">Email</label>
+                    <input type="email" id="editOrderEmail" class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-2">Місто</label>
+                    <input type="text" id="editOrderCity" class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 text-white">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-bold mb-2">Адреса</label>
+                    <textarea id="editOrderAddress" rows="2" class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 text-white"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-2">Статус</label>
+                    <select id="editOrderStatus" class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 text-white">
+                        <option value="new">🆕 Нове</option>
+                        <option value="completed">✅ Виконано</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-2">Оплата</label>
+                    <select id="editOrderPayment" class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 text-white">
+                        <option value="full">💳 Повна оплата</option>
+                        <option value="partial">💸 Часткова (30%)</option>
+                        <option value="post">📦 Оплата на пошті</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-2">Товари</label>
+                <div id="editOrderItemsList" class="bg-slate-800/50 rounded-xl p-3 order-items-list"></div>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="saveOrderEdit()" class="flex-1 bg-orange-500 py-3 rounded-xl font-bold hover:bg-orange-600 transition">💾 Зберегти</button>
+                <button onclick="closeEditOrderModal()" class="flex-1 bg-slate-700 py-3 rounded-xl font-bold hover:bg-slate-600 transition">❌ Скасувати</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let uploadedPhotoUrls = [];
         let sizeChartUrl = null;
@@ -331,6 +392,7 @@
         let allColors = [];
         let currentEditReviewId = null;
         let currentEditRating = 5;
+        let currentEditOrderId = null;
 
         async function api(url, options = {}) {
             const res = await fetch(url, {
@@ -755,7 +817,7 @@
                                 <span class="font-mono text-orange-400 text-lg font-bold">№${o.order_number}</span>
                                 ${o.guest ? '<span class="ml-2 text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded-full">👤 Гість</span>' : ''}
                             </div>
-                            <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-2 flex-wrap">
                                 <span class="${o.status === 'new' ? 'status-badge-new' : 'status-badge-completed'}">
                                     ${o.status === 'new' ? '🆕 Нове' : '✅ Виконано'}
                                 </span>
@@ -763,6 +825,8 @@
                                     <option value="new" ${o.status === 'new' ? 'selected' : ''}>📌 Нове</option>
                                     <option value="completed" ${o.status === 'completed' ? 'selected' : ''}>✅ Виконано</option>
                                 </select>
+                                <button onclick="editOrder(${o.id})" class="edit-btn"><i class="fas fa-edit"></i> Редагувати</button>
+                                <button onclick="deleteOrder(${o.id})" class="delete-btn"><i class="fas fa-trash"></i> Видалити</button>
                             </div>
                         </div>
                         <div class="grid md:grid-cols-2 gap-3 text-sm">
@@ -788,7 +852,73 @@
                 await api(`/api/admin/orders/${orderId}/status`, { method: 'PUT', body: JSON.stringify({ status }) });
                 showToast('✅ Статус замовлення оновлено');
                 loadOrders();
+                loadStats();
             } catch(e) { showToast('❌ ' + e.message, true); }
+        }
+
+        async function deleteOrder(orderId) {
+            if (!confirm('Видалити замовлення? Цю дію неможливо скасувати!')) return;
+            try {
+                await api(`/api/admin/orders/${orderId}`, { method: 'DELETE' });
+                showToast('✅ Замовлення видалено');
+                loadOrders();
+                loadStats();
+            } catch(e) { showToast('❌ ' + e.message, true); }
+        }
+
+        async function editOrder(orderId) {
+            try {
+                const orders = await api('/api/admin/orders');
+                const order = orders.find(o => o.id === orderId);
+                if (!order) return;
+                
+                currentEditOrderId = orderId;
+                document.getElementById('editOrderNumber').textContent = order.order_number;
+                document.getElementById('editOrderName').value = order.user_name;
+                document.getElementById('editOrderPhone').value = order.user_phone;
+                document.getElementById('editOrderEmail').value = order.user_email || '';
+                document.getElementById('editOrderCity').value = order.city;
+                document.getElementById('editOrderAddress').value = order.warehouse_address || '';
+                document.getElementById('editOrderStatus').value = order.status;
+                document.getElementById('editOrderPayment').value = order.payment_method;
+                
+                const itemsHtml = order.items.map(i => `
+                    <div class="text-sm py-1 border-b border-white/10 last:border-0">
+                        • ${escapeHtml(i.name)} (${i.size})${i.color ? `, ${i.color}` : ''} x${i.quantity} = ${i.total} грн
+                    </div>
+                `).join('');
+                document.getElementById('editOrderItemsList').innerHTML = itemsHtml || '<div class="text-gray-400">Немає товарів</div>';
+                
+                document.getElementById('editOrderModal').classList.remove('hidden');
+            } catch(e) {
+                showToast('❌ ' + e.message, true);
+            }
+        }
+
+        async function saveOrderEdit() {
+            try {
+                const data = {
+                    user_name: document.getElementById('editOrderName').value,
+                    user_phone: document.getElementById('editOrderPhone').value,
+                    user_email: document.getElementById('editOrderEmail').value,
+                    city: document.getElementById('editOrderCity').value,
+                    warehouse_address: document.getElementById('editOrderAddress').value,
+                    status: document.getElementById('editOrderStatus').value,
+                    payment_method: document.getElementById('editOrderPayment').value
+                };
+                await api(`/api/admin/orders/${currentEditOrderId}`, { method: 'PUT', body: JSON.stringify(data) });
+                showToast('✅ Замовлення оновлено');
+                closeEditOrderModal();
+                loadOrders();
+                loadStats();
+            } catch(e) {
+                showToast('❌ ' + e.message, true);
+            }
+        }
+
+        function closeEditOrderModal() {
+            document.getElementById('editOrderModal').classList.add('hidden');
+            currentEditOrderId = null;
         }
 
         async function loadAllReviews() {
@@ -907,15 +1037,28 @@
                                 <p class="text-xs text-gray-500 mt-1">📅 ${new Date(u.created_at).toLocaleDateString()}</p>
                             </div>
                         </div>
-                        ${u.username !== 'admin' ? `
-                            <button onclick="toggleAdminRole(${u.id}, ${!u.is_admin})" 
-                                    class="px-4 py-2 rounded-lg text-sm font-bold transition ${u.is_admin ? 'bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600/30' : 'bg-green-600/20 text-green-400 hover:bg-green-600/30'}">
-                                ${u.is_admin ? '🔽 Забрати права адміна' : '⭐ Зробити адміністратором'}
-                            </button>
-                        ` : '<span class="text-xs text-gray-500 bg-slate-700 px-3 py-1 rounded-full">🔒 Головний адмін</span>'}
+                        <div class="flex gap-2">
+                            ${u.username !== 'admin' ? `
+                                <button onclick="toggleAdminRole(${u.id}, ${!u.is_admin})" 
+                                        class="px-4 py-2 rounded-lg text-sm font-bold transition ${u.is_admin ? 'bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600/30' : 'bg-green-600/20 text-green-400 hover:bg-green-600/30'}">
+                                    ${u.is_admin ? '🔽 Забрати права адміна' : '⭐ Зробити адміністратором'}
+                                </button>
+                                <button onclick="deleteUser(${u.id}, '${escapeHtml(u.username)}')" class="delete-btn"><i class="fas fa-user-slash"></i> Видалити</button>
+                            ` : '<span class="text-xs text-gray-500 bg-slate-700 px-3 py-1 rounded-full">🔒 Головний адмін</span>'}
+                        </div>
                     </div>
                 `).join('');
             } catch(e) { console.error(e); }
+        }
+
+        async function deleteUser(userId, username) {
+            if (!confirm(`Видалити користувача "${username}"? Цю дію неможливо скасувати!`)) return;
+            try {
+                await api(`/api/admin/users/${userId}`, { method: 'DELETE' });
+                showToast(`✅ Користувача "${username}" видалено`);
+                loadUsers();
+                loadStats();
+            } catch(e) { showToast('❌ ' + e.message, true); }
         }
 
         async function toggleAdminRole(userId, makeAdmin) {
@@ -1027,7 +1170,7 @@
                 'warehouse_address': 'Адреса', 'payment_method': 'Оплата', 'total_price': 'Сума',
                 'status': 'Статус', 'quantity': 'Кількість', 'size': 'Розмір', 'color': 'Колір',
                 'size_chart_url': 'Розмірна сітка', 'rating': 'Оцінка', 'comment': 'Коментар',
-                'product_id': 'ID товару', 'user_id': 'ID користувача', 'user_name': 'Користувач'
+                'product_id': 'ID товару', 'user_id': 'ID користувача'
             };
             
             const tableHtml = `
