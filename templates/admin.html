@@ -108,8 +108,7 @@
         
         .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); z-index: 1000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
         
-        /* Стилі для модалки редагування замовлення */
-        .order-edit-modal .order-items-list { max-height: 300px; overflow-y: auto; }
+        .order-edit-modal .order-items-list, .product-edit-modal .product-items-list { max-height: 300px; overflow-y: auto; }
     </style>
 </head>
 <body class="p-4 md:p-6">
@@ -295,6 +294,61 @@
         </div>
     </div>
 
+    <!-- Модалка редагування товару -->
+    <div id="editProductModal" class="modal hidden product-edit-modal">
+        <div class="bg-slate-900 rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-black">✏️ Редагування товару</h2>
+                <button onclick="closeEditProductModal()" class="text-gray-400 text-2xl hover:text-white">&times;</button>
+            </div>
+            <input type="hidden" id="editProductId">
+            <div class="grid md:grid-cols-2 gap-4">
+                <input type="text" id="editProductName" placeholder="Назва товару" class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 text-white">
+                <select id="editProductCategory" class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 text-white"></select>
+                <input type="number" id="editProductPrice" placeholder="Ціна (грн)" class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 text-white">
+                <input type="text" id="editProductSizes" placeholder="Розміри (XS,S,M,L,XL)" class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 text-white">
+                <input type="text" id="editProductBrand" placeholder="Бренд" class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 text-white">
+                <input type="text" id="editProductMaterial" placeholder="Матеріал" class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 text-white">
+                <input type="text" id="editProductCountry" placeholder="Країна" class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 text-white">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-bold mb-2">Доступні кольори</label>
+                    <div id="editColorsCheckboxes" class="flex flex-wrap gap-2"></div>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-bold mb-2">Опис товару</label>
+                    <textarea id="editProductDescription" rows="4" class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 text-white"></textarea>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-bold mb-2">Фото товару</label>
+                    <div id="editDropZone" class="drop-zone" onclick="document.getElementById('editPhotoInput').click()">
+                        <i class="fas fa-cloud-upload-alt text-4xl text-orange-400 mb-2 block"></i>
+                        <p>Натисніть або перетягніть фото для завантаження</p>
+                    </div>
+                    <input type="file" id="editPhotoInput" multiple accept="image/*" class="hidden" onchange="handleEditFileSelect(this.files)">
+                    <div id="editImagePreviewContainer" class="flex flex-wrap gap-2 mt-4"></div>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-bold mb-2">📏 Розмірна сітка</label>
+                    <div id="editSizeChartDropZone" class="drop-zone" onclick="document.getElementById('editSizeChartInput').click()">
+                        <i class="fas fa-ruler-combined text-4xl text-orange-400 mb-2 block"></i>
+                        <p>Натисніть або перетягніть фото розмірної сітки</p>
+                    </div>
+                    <input type="file" id="editSizeChartInput" accept="image/*" class="hidden" onchange="handleEditSizeChartSelect(this.files)">
+                    <div id="editSizeChartPreviewContainer" class="mt-4 hidden">
+                        <div class="image-preview">
+                            <img id="editSizeChartPreviewImg" src="" alt="Розмірна сітка">
+                            <div class="remove-img" onclick="removeEditSizeChart()">×</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-4">
+                <button onclick="saveProductEdit()" class="flex-1 bg-orange-500 py-3 rounded-xl font-bold hover:bg-orange-600 transition">💾 Зберегти зміни</button>
+                <button onclick="closeEditProductModal()" class="flex-1 bg-slate-700 py-3 rounded-xl font-bold hover:bg-slate-600 transition">❌ Скасувати</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Модалка редагування відгуку -->
     <div id="editReviewModal" class="modal hidden">
         <div class="bg-slate-900 rounded-3xl max-w-lg w-full p-6">
@@ -382,6 +436,8 @@
     <script>
         let uploadedPhotoUrls = [];
         let sizeChartUrl = null;
+        let editUploadedPhotoUrls = [];
+        let editSizeChartUrl = null;
         let fullDatabaseData = null;
         let currentDbTable = 'categories';
         let currentPage = 1;
@@ -393,6 +449,8 @@
         let currentEditReviewId = null;
         let currentEditRating = 5;
         let currentEditOrderId = null;
+        let currentEditProductId = null;
+        let editExistingPhotos = [];
 
         async function api(url, options = {}) {
             const res = await fetch(url, {
@@ -528,27 +586,30 @@
             } catch(e) { console.error(e); }
         }
 
-        async function loadCategoriesForSelect() {
+        async function loadCategoriesForSelect(selectId = 'productCategory') {
             try {
                 const categories = await api('/api/categories');
-                const select = document.getElementById('productCategory');
-                select.innerHTML = '<option value="">Оберіть категорію</option>' + 
-                    categories.map(c => `<option value="${escapeHtml(c.name)}">${c.icon || '🏷️'} ${escapeHtml(c.name)}</option>`).join('');
+                const select = document.getElementById(selectId);
+                if (select) {
+                    select.innerHTML = '<option value="">Оберіть категорію</option>' + 
+                        categories.map(c => `<option value="${escapeHtml(c.name)}">${c.icon || '🏷️'} ${escapeHtml(c.name)}</option>`).join('');
+                }
             } catch(e) { console.error(e); }
         }
 
-        async function loadColorsCheckboxes() {
+        async function loadColorsCheckboxes(containerId = 'colorsCheckboxes', selectedColors = []) {
             try {
                 const colors = await api('/api/colors');
                 allColors = colors;
-                const container = document.getElementById('colorsCheckboxes');
+                const container = document.getElementById(containerId);
+                if (!container) return;
                 if (!colors.length) {
                     container.innerHTML = '<div class="text-gray-400">Немає кольорів. Додайте кольори в розділі "Кольори"</div>';
                     return;
                 }
                 container.innerHTML = colors.map(c => `
                     <label class="color-checkbox">
-                        <input type="checkbox" value="${c.name}">
+                        <input type="checkbox" value="${c.name}" ${selectedColors.includes(c.name) ? 'checked' : ''}>
                         <div style="background: ${c.code}" class="w-5 h-5 rounded-full"></div>
                         <span>${c.name}</span>
                     </label>
@@ -566,6 +627,7 @@
                 document.getElementById('newCategoryName').value = '';
                 loadCategories();
                 loadCategoriesForSelect();
+                loadCategoriesForSelect('editProductCategory');
             } catch(e) { showToast('❌ ' + e.message, true); }
         }
 
@@ -576,6 +638,7 @@
                 showToast('✅ Категорію видалено');
                 loadCategories();
                 loadCategoriesForSelect();
+                loadCategoriesForSelect('editProductCategory');
             } catch(e) { showToast('❌ ' + e.message, true); }
         }
 
@@ -603,6 +666,7 @@
             } catch(e) { showToast('❌ ' + e.message, true); }
         }
 
+        // === ФУНКЦІЇ ДЛЯ ДОДАВАННЯ ТОВАРУ ===
         const dropZone = document.getElementById('dropZone');
         if (dropZone) {
             dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
@@ -697,8 +761,8 @@
             showToast('Розмірну сітку видалено');
         }
 
-        function getSelectedColors() {
-            const checkboxes = document.querySelectorAll('#colorsCheckboxes input:checked');
+        function getSelectedColors(containerId = 'colorsCheckboxes') {
+            const checkboxes = document.querySelectorAll(`#${containerId} input:checked`);
             return Array.from(checkboxes).map(cb => cb.value);
         }
 
@@ -772,7 +836,7 @@
                             </div>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="editProduct(${p.id}, ${p.price})" class="edit-btn">✏️ Змінити ціну</button>
+                            <button onclick="editProductFull(${p.id})" class="edit-btn">✏️ Редагувати</button>
                             <button onclick="deleteProduct(${p.id})" class="delete-btn">🗑 Видалити</button>
                         </div>
                     </div>
@@ -790,17 +854,157 @@
             } catch(e) { showToast('❌ ' + e.message, true); }
         }
 
-        async function editProduct(id, currentPrice) {
-            const newPrice = prompt('Введіть нову ціну в гривнях:', currentPrice);
-            if (newPrice && !isNaN(parseFloat(newPrice))) {
-                try {
-                    await api(`/api/products/${id}`, { method: 'PUT', body: JSON.stringify({ price: parseFloat(newPrice) }) });
-                    showToast('✅ Ціну оновлено');
-                    loadProducts();
-                } catch(e) { showToast('❌ ' + e.message, true); }
+        // === ПОВНЕ РЕДАГУВАННЯ ТОВАРУ ===
+        async function editProductFull(productId) {
+            try {
+                const product = await api(`/api/products/${productId}`);
+                currentEditProductId = productId;
+                
+                document.getElementById('editProductId').value = productId;
+                document.getElementById('editProductName').value = product.name;
+                document.getElementById('editProductPrice').value = product.price;
+                document.getElementById('editProductSizes').value = product.sizes.join(', ');
+                document.getElementById('editProductBrand').value = product.brand || 'KISIK';
+                document.getElementById('editProductMaterial').value = product.material || '';
+                document.getElementById('editProductCountry').value = product.country || 'Україна';
+                document.getElementById('editProductDescription').value = product.description || '';
+                
+                await loadCategoriesForSelect('editProductCategory');
+                const catSelect = document.getElementById('editProductCategory');
+                if (catSelect && product.category) {
+                    catSelect.value = product.category;
+                }
+                
+                editExistingPhotos = [...(product.photos || [])];
+                editUploadedPhotoUrls = [...editExistingPhotos];
+                editSizeChartUrl = product.size_chart_url || null;
+                
+                renderEditImagePreviews();
+                renderEditSizeChartPreview();
+                
+                await loadColorsCheckboxes('editColorsCheckboxes', product.colors || []);
+                
+                document.getElementById('editProductModal').classList.remove('hidden');
+            } catch(e) {
+                showToast('❌ ' + e.message, true);
             }
         }
+        
+        function renderEditImagePreviews() {
+            const container = document.getElementById('editImagePreviewContainer');
+            container.innerHTML = editUploadedPhotoUrls.map((url, idx) => `
+                <div class="image-preview">
+                    <img src="${url}" alt="Preview">
+                    <div class="remove-img" onclick="removeEditImage(${idx})">×</div>
+                </div>
+            `).join('');
+        }
+        
+        function renderEditSizeChartPreview() {
+            const container = document.getElementById('editSizeChartPreviewContainer');
+            const img = document.getElementById('editSizeChartPreviewImg');
+            if (editSizeChartUrl) {
+                img.src = editSizeChartUrl;
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+        
+        function removeEditImage(index) {
+            editUploadedPhotoUrls.splice(index, 1);
+            renderEditImagePreviews();
+        }
+        
+        function removeEditSizeChart() {
+            editSizeChartUrl = null;
+            document.getElementById('editSizeChartPreviewContainer').classList.add('hidden');
+        }
+        
+        async function handleEditFileSelect(files) {
+            for (const file of files) {
+                if (file.size > 10 * 1024 * 1024) {
+                    showToast(`Файл ${file.name} занадто великий`, true);
+                    continue;
+                }
+                const formData = new FormData();
+                formData.append('photo', file);
+                try {
+                    const res = await fetch('/api/upload-photo', { method: 'POST', body: formData });
+                    if (!res.ok) throw new Error('Upload failed');
+                    const data = await res.json();
+                    editUploadedPhotoUrls.push(data.url);
+                    renderEditImagePreviews();
+                    showToast(`✅ ${file.name} завантажено`);
+                } catch(e) { showToast(`❌ Помилка ${file.name}`, true); }
+            }
+        }
+        
+        async function handleEditSizeChartSelect(files) {
+            if (!files.length) return;
+            const file = files[0];
+            if (file.size > 10 * 1024 * 1024) {
+                showToast('Файл занадто великий', true);
+                return;
+            }
+            const formData = new FormData();
+            formData.append('photo', file);
+            try {
+                const res = await fetch('/api/upload-size-chart', { method: 'POST', body: formData });
+                if (!res.ok) throw new Error('Upload failed');
+                const data = await res.json();
+                editSizeChartUrl = data.url;
+                renderEditSizeChartPreview();
+                showToast('✅ Розмірну сітку завантажено');
+            } catch(e) { showToast('❌ Помилка завантаження розмірної сітки', true); }
+        }
+        
+        async function saveProductEdit() {
+            const productId = currentEditProductId;
+            const name = document.getElementById('editProductName').value.trim();
+            const category = document.getElementById('editProductCategory').value;
+            const price = parseFloat(document.getElementById('editProductPrice').value);
+            const sizesStr = document.getElementById('editProductSizes').value;
+            const sizes = sizesStr.split(',').map(s => s.trim().toUpperCase());
+            const brand = document.getElementById('editProductBrand').value.trim();
+            const material = document.getElementById('editProductMaterial').value.trim();
+            const country = document.getElementById('editProductCountry').value.trim();
+            const description = document.getElementById('editProductDescription').value.trim();
+            const colors = getSelectedColors('editColorsCheckboxes');
+            
+            if (!name || !category || !price || !sizes.length) {
+                showToast('Заповніть всі обов\'язкові поля', true);
+                return;
+            }
+            if (!editUploadedPhotoUrls.length) {
+                showToast('Додайте хоча б одне фото товару', true);
+                return;
+            }
+            
+            try {
+                await api(`/api/products/${productId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ 
+                        name, category, price, sizes, colors, description, brand, material, country, 
+                        photo_urls: editUploadedPhotoUrls,
+                        size_chart_url: editSizeChartUrl
+                    })
+                });
+                showToast('✅ Товар оновлено');
+                closeEditProductModal();
+                loadProducts();
+                loadStats();
+            } catch(e) { showToast('❌ ' + e.message, true); }
+        }
+        
+        function closeEditProductModal() {
+            document.getElementById('editProductModal').classList.add('hidden');
+            currentEditProductId = null;
+            editUploadedPhotoUrls = [];
+            editSizeChartUrl = null;
+        }
 
+        // === ЗАМОВЛЕННЯ ===
         async function loadOrders() {
             try {
                 const orders = await api('/api/admin/orders');
@@ -921,6 +1125,7 @@
             currentEditOrderId = null;
         }
 
+        // === ВІДГУКИ ===
         async function loadAllReviews() {
             try {
                 const data = await api('/api/admin/database');
@@ -1011,6 +1216,7 @@
             currentEditReviewId = null;
         }
 
+        // === КОРИСТУВАЧІ ===
         async function loadUsers() {
             try {
                 const users = await api('/api/admin/users');
@@ -1069,6 +1275,7 @@
             } catch(e) { showToast('❌ ' + e.message, true); }
         }
 
+        // === БАЗА ДАНИХ ===
         async function loadDatabase() {
             try {
                 const data = await api('/api/admin/database');
@@ -1249,6 +1456,7 @@
             } catch(e) { window.location.href = '/admin'; }
         }
 
+        // Ініціалізація
         checkAuth();
         showSection('stats');
     </script>
