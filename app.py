@@ -594,123 +594,6 @@ def add_review(product_id):
 
     return jsonify({'status': 'ok', 'rating_avg': product.rating_avg, 'rating_count': product.rating_count})
 
-# ============ ДОДАТКОВІ АДМІН API (ВИДАЛЕННЯ ТА РЕДАГУВАННЯ) ============
-
-@app.route('/api/admin/orders/<int:order_id>', methods=['DELETE'])
-@admin_required
-def admin_delete_order(order_id):
-    """Повне видалення замовлення"""
-    order = db.session.get(Order, order_id)
-    if not order:
-        return jsonify({'error': 'Замовлення не знайдено'}), 404
-    db.session.delete(order)
-    db.session.commit()
-    return jsonify({'status': 'ok'})
-
-@app.route('/api/admin/orders/<int:order_id>', methods=['PUT'])
-@admin_required
-def admin_update_order(order_id):
-    """Повне редагування замовлення"""
-    order = db.session.get(Order, order_id)
-    if not order:
-        return jsonify({'error': 'Замовлення не знайдено'}), 404
-    
-    data = request.json
-    if 'user_name' in data:
-        order.user_name = data['user_name']
-    if 'user_phone' in data:
-        order.user_phone = data['user_phone']
-    if 'user_email' in data:
-        order.user_email = data['user_email']
-    if 'city' in data:
-        order.city = data['city']
-    if 'warehouse_address' in data:
-        order.warehouse_address = data['warehouse_address']
-    if 'status' in data:
-        order.status = data['status']
-    if 'payment_method' in data:
-        order.payment_method = data['payment_method']
-    
-    db.session.commit()
-    return jsonify({'status': 'ok'})
-
-@app.route('/api/admin/users/<int:user_id>', methods=['DELETE'])
-@admin_required
-def admin_delete_user(user_id):
-    """Видалення користувача та всіх пов'язаних даних"""
-    user = db.session.get(User, user_id)
-    if not user:
-        return jsonify({'error': 'Користувача не знайдено'}), 404
-    
-    # Забороняємо видаляти головного адміна
-    if user.username == 'admin':
-        return jsonify({'error': 'Не можна видалити головного адміністратора'}), 400
-    
-    # Видаляємо відгуки користувача
-    Review.query.filter_by(user_id=user_id).delete()
-    
-    # Видаляємо обрані товари
-    Favorite.query.filter_by(user_id=user_id).delete()
-    
-    # Видаляємо замовлення користувача
-    Order.query.filter_by(user_id=user_id).delete()
-    
-    # Видаляємо кошик користувача (якщо є guest_session, але для user_id це окремо)
-    # Для простоти видаляємо всі cart_items з guest_session, які належать цьому користувачеві?
-    # Але cart_items прив'язані до session_id, а не user_id, тому залишаємо як є
-    
-    db.session.delete(user)
-    db.session.commit()
-    return jsonify({'status': 'ok'})
-
-@app.route('/api/admin/reviews/<int:review_id>', methods=['PUT'])
-@admin_required
-def admin_update_review(review_id):
-    """Редагування відгуку адміністратором"""
-    review = db.session.get(Review, review_id)
-    if not review:
-        return jsonify({'error': 'Відгук не знайдено'}), 404
-    
-    data = request.json
-    old_rating = review.rating
-    new_rating = data.get('rating', old_rating)
-    comment = data.get('comment', review.comment)
-    
-    # Оновлюємо рейтинг товару
-    product = db.session.get(Product, review.product_id)
-    if product and new_rating != old_rating:
-        product.rating_sum = product.rating_sum - old_rating + new_rating
-    
-    review.rating = new_rating
-    review.comment = comment
-    db.session.commit()
-    return jsonify({'status': 'ok'})
-
-@app.route('/api/admin/reviews/<int:review_id>', methods=['DELETE'])
-@admin_required
-def admin_delete_review(review_id):
-    """Видалення відгуку адміністратором"""
-    review = db.session.get(Review, review_id)
-    if not review:
-        return jsonify({'error': 'Відгук не знайдено'}), 404
-    
-    data = request.json or {}
-    product_id = data.get('product_id') or review.product_id
-    rating = data.get('rating') or review.rating
-    
-    # Оновлюємо рейтинг товару
-    product = db.session.get(Product, product_id)
-    if product:
-        product.rating_sum -= rating
-        product.rating_count -= 1
-        if product.rating_count < 0:
-            product.rating_count = 0
-            product.rating_sum = 0
-    
-    db.session.delete(review)
-    db.session.commit()
-    return jsonify({'status': 'ok'})
-
 # ============ API ВПОДОБАНЬ ============
 @app.route('/api/favorites', methods=['GET'])
 @login_required
@@ -858,185 +741,18 @@ def update_product(product_id):
     db.session.commit()
     return jsonify({'status': 'ok'})
 
-# ============ ДОДАТКОВІ АДМІН API (РЕДАГУВАННЯ ТОВАРІВ) ============
-
-@app.route('/api/products/<int:product_id>', methods=['PUT'])
-@admin_required
-def update_product_full(product_id):
-    """Повне редагування товару"""
-    product = db.session.get(Product, product_id)
-    if not product:
-        return jsonify({'error': 'Товар не знайдено'}), 404
-    
-    data = request.json
-    
-    if 'name' in data:
-        product.name = data['name']
-    if 'category' in data:
-        product.category = data['category']
-    if 'price' in data:
-        product.price = float(data['price'])
-    if 'sizes' in data:
-        product.sizes = ','.join(data['sizes'])
-    if 'colors' in data:
-        product.colors = ','.join(data['colors'])
-    if 'description' in data:
-        product.description = data['description']
-    if 'brand' in data:
-        product.brand = data['brand']
-    if 'material' in data:
-        product.material = data['material']
-    if 'country' in data:
-        product.country = data['country']
-    if 'size_chart_url' in data:
-        product.size_chart_url = data['size_chart_url']
-    if 'photo_urls' in data:
-        # Видаляємо старі фото, яких більше немає
-        old_urls = product.photo_urls.split(',') if product.photo_urls else []
-        new_urls = data['photo_urls']
-        for url in old_urls:
-            if url not in new_urls:
-                delete_photo_from_r2(url)
-        product.photo_urls = ','.join(new_urls)
-    
-    db.session.commit()
-    return jsonify({'status': 'ok'})
-
 @app.route('/api/products/<int:product_id>', methods=['DELETE'])
 @admin_required
-def delete_product_full(product_id):
-    """Повне видалення товару з фото"""
+def delete_product(product_id):
     product = db.session.get(Product, product_id)
     if not product:
         return jsonify({'error': 'Товар не знайдено'}), 404
-    
-    # Видаляємо всі фото товару
     if product.photo_urls:
         for url in product.photo_urls.split(','):
             delete_photo_from_r2(url)
     if product.size_chart_url:
         delete_photo_from_r2(product.size_chart_url)
-    
-    # Видаляємо відгуки до товару
-    Review.query.filter_by(product_id=product_id).delete()
-    
-    # Видаляємо з обраного
-    Favorite.query.filter_by(product_id=product_id).delete()
-    
-    # Видаляємо з кошиків
-    CartItem.query.filter_by(product_id=product_id).delete()
-    
     db.session.delete(product)
-    db.session.commit()
-    return jsonify({'status': 'ok'})
-
-# ============ ДОДАТКОВІ АДМІН API (ЗАМОВЛЕННЯ ТА КОРИСТУВАЧІ) ============
-
-@app.route('/api/admin/orders/<int:order_id>', methods=['DELETE'])
-@admin_required
-def admin_delete_order(order_id):
-    """Повне видалення замовлення"""
-    order = db.session.get(Order, order_id)
-    if not order:
-        return jsonify({'error': 'Замовлення не знайдено'}), 404
-    db.session.delete(order)
-    db.session.commit()
-    return jsonify({'status': 'ok'})
-
-@app.route('/api/admin/orders/<int:order_id>', methods=['PUT'])
-@admin_required
-def admin_update_order(order_id):
-    """Повне редагування замовлення"""
-    order = db.session.get(Order, order_id)
-    if not order:
-        return jsonify({'error': 'Замовлення не знайдено'}), 404
-    
-    data = request.json
-    if 'user_name' in data:
-        order.user_name = data['user_name']
-    if 'user_phone' in data:
-        order.user_phone = data['user_phone']
-    if 'user_email' in data:
-        order.user_email = data['user_email']
-    if 'city' in data:
-        order.city = data['city']
-    if 'warehouse_address' in data:
-        order.warehouse_address = data['warehouse_address']
-    if 'status' in data:
-        order.status = data['status']
-    if 'payment_method' in data:
-        order.payment_method = data['payment_method']
-    
-    db.session.commit()
-    return jsonify({'status': 'ok'})
-
-@app.route('/api/admin/users/<int:user_id>', methods=['DELETE'])
-@admin_required
-def admin_delete_user(user_id):
-    """Видалення користувача та всіх пов'язаних даних"""
-    user = db.session.get(User, user_id)
-    if not user:
-        return jsonify({'error': 'Користувача не знайдено'}), 404
-    
-    if user.username == 'admin':
-        return jsonify({'error': 'Не можна видалити головного адміністратора'}), 400
-    
-    # Видаляємо відгуки користувача
-    Review.query.filter_by(user_id=user_id).delete()
-    
-    # Видаляємо обрані товари
-    Favorite.query.filter_by(user_id=user_id).delete()
-    
-    # Видаляємо замовлення користувача
-    Order.query.filter_by(user_id=user_id).delete()
-    
-    db.session.delete(user)
-    db.session.commit()
-    return jsonify({'status': 'ok'})
-
-@app.route('/api/admin/reviews/<int:review_id>', methods=['PUT'])
-@admin_required
-def admin_update_review(review_id):
-    """Редагування відгуку адміністратором"""
-    review = db.session.get(Review, review_id)
-    if not review:
-        return jsonify({'error': 'Відгук не знайдено'}), 404
-    
-    data = request.json
-    old_rating = review.rating
-    new_rating = data.get('rating', old_rating)
-    comment = data.get('comment', review.comment)
-    
-    product = db.session.get(Product, review.product_id)
-    if product and new_rating != old_rating:
-        product.rating_sum = product.rating_sum - old_rating + new_rating
-    
-    review.rating = new_rating
-    review.comment = comment
-    db.session.commit()
-    return jsonify({'status': 'ok'})
-
-@app.route('/api/admin/reviews/<int:review_id>', methods=['DELETE'])
-@admin_required
-def admin_delete_review(review_id):
-    """Видалення відгуку адміністратором"""
-    review = db.session.get(Review, review_id)
-    if not review:
-        return jsonify({'error': 'Відгук не знайдено'}), 404
-    
-    data = request.json or {}
-    product_id = data.get('product_id') or review.product_id
-    rating = data.get('rating') or review.rating
-    
-    product = db.session.get(Product, product_id)
-    if product:
-        product.rating_sum -= rating
-        product.rating_count -= 1
-        if product.rating_count < 0:
-            product.rating_count = 0
-            product.rating_sum = 0
-    
-    db.session.delete(review)
     db.session.commit()
     return jsonify({'status': 'ok'})
 
@@ -1214,7 +930,7 @@ def get_orders():
         'items': json.loads(o.items) if o.items else []
     } for o in orders])
 
-# ============ API АДМІН (РОЗШИРЕНІ МОЖЛИВОСТІ) ============
+# ============ API АДМІН ============
 @app.route('/api/admin/orders', methods=['GET'])
 @admin_required
 def admin_get_orders():
@@ -1236,6 +952,32 @@ def admin_update_order_status(order_id):
         return jsonify({'error': 'Замовлення не знайдено'}), 404
     data = request.json
     order.status = data.get('status', order.status)
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+@app.route('/api/admin/orders/<int:order_id>', methods=['PUT'])
+@admin_required
+def admin_update_order(order_id):
+    order = db.session.get(Order, order_id)
+    if not order:
+        return jsonify({'error': 'Замовлення не знайдено'}), 404
+    
+    data = request.json
+    if 'user_name' in data:
+        order.user_name = data['user_name']
+    if 'user_phone' in data:
+        order.user_phone = data['user_phone']
+    if 'user_email' in data:
+        order.user_email = data['user_email']
+    if 'city' in data:
+        order.city = data['city']
+    if 'warehouse_address' in data:
+        order.warehouse_address = data['warehouse_address']
+    if 'status' in data:
+        order.status = data['status']
+    if 'payment_method' in data:
+        order.payment_method = data['payment_method']
+    
     db.session.commit()
     return jsonify({'status': 'ok'})
 
