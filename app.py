@@ -594,6 +594,123 @@ def add_review(product_id):
 
     return jsonify({'status': 'ok', 'rating_avg': product.rating_avg, 'rating_count': product.rating_count})
 
+# ============ ДОДАТКОВІ АДМІН API (ВИДАЛЕННЯ ТА РЕДАГУВАННЯ) ============
+
+@app.route('/api/admin/orders/<int:order_id>', methods=['DELETE'])
+@admin_required
+def admin_delete_order(order_id):
+    """Повне видалення замовлення"""
+    order = db.session.get(Order, order_id)
+    if not order:
+        return jsonify({'error': 'Замовлення не знайдено'}), 404
+    db.session.delete(order)
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+@app.route('/api/admin/orders/<int:order_id>', methods=['PUT'])
+@admin_required
+def admin_update_order(order_id):
+    """Повне редагування замовлення"""
+    order = db.session.get(Order, order_id)
+    if not order:
+        return jsonify({'error': 'Замовлення не знайдено'}), 404
+    
+    data = request.json
+    if 'user_name' in data:
+        order.user_name = data['user_name']
+    if 'user_phone' in data:
+        order.user_phone = data['user_phone']
+    if 'user_email' in data:
+        order.user_email = data['user_email']
+    if 'city' in data:
+        order.city = data['city']
+    if 'warehouse_address' in data:
+        order.warehouse_address = data['warehouse_address']
+    if 'status' in data:
+        order.status = data['status']
+    if 'payment_method' in data:
+        order.payment_method = data['payment_method']
+    
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+@app.route('/api/admin/users/<int:user_id>', methods=['DELETE'])
+@admin_required
+def admin_delete_user(user_id):
+    """Видалення користувача та всіх пов'язаних даних"""
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({'error': 'Користувача не знайдено'}), 404
+    
+    # Забороняємо видаляти головного адміна
+    if user.username == 'admin':
+        return jsonify({'error': 'Не можна видалити головного адміністратора'}), 400
+    
+    # Видаляємо відгуки користувача
+    Review.query.filter_by(user_id=user_id).delete()
+    
+    # Видаляємо обрані товари
+    Favorite.query.filter_by(user_id=user_id).delete()
+    
+    # Видаляємо замовлення користувача
+    Order.query.filter_by(user_id=user_id).delete()
+    
+    # Видаляємо кошик користувача (якщо є guest_session, але для user_id це окремо)
+    # Для простоти видаляємо всі cart_items з guest_session, які належать цьому користувачеві?
+    # Але cart_items прив'язані до session_id, а не user_id, тому залишаємо як є
+    
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+@app.route('/api/admin/reviews/<int:review_id>', methods=['PUT'])
+@admin_required
+def admin_update_review(review_id):
+    """Редагування відгуку адміністратором"""
+    review = db.session.get(Review, review_id)
+    if not review:
+        return jsonify({'error': 'Відгук не знайдено'}), 404
+    
+    data = request.json
+    old_rating = review.rating
+    new_rating = data.get('rating', old_rating)
+    comment = data.get('comment', review.comment)
+    
+    # Оновлюємо рейтинг товару
+    product = db.session.get(Product, review.product_id)
+    if product and new_rating != old_rating:
+        product.rating_sum = product.rating_sum - old_rating + new_rating
+    
+    review.rating = new_rating
+    review.comment = comment
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+@app.route('/api/admin/reviews/<int:review_id>', methods=['DELETE'])
+@admin_required
+def admin_delete_review(review_id):
+    """Видалення відгуку адміністратором"""
+    review = db.session.get(Review, review_id)
+    if not review:
+        return jsonify({'error': 'Відгук не знайдено'}), 404
+    
+    data = request.json or {}
+    product_id = data.get('product_id') or review.product_id
+    rating = data.get('rating') or review.rating
+    
+    # Оновлюємо рейтинг товару
+    product = db.session.get(Product, product_id)
+    if product:
+        product.rating_sum -= rating
+        product.rating_count -= 1
+        if product.rating_count < 0:
+            product.rating_count = 0
+            product.rating_sum = 0
+    
+    db.session.delete(review)
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
 # ============ API ВПОДОБАНЬ ============
 @app.route('/api/favorites', methods=['GET'])
 @login_required
