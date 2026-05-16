@@ -1066,8 +1066,9 @@ def admin_delete_review(review_id):
     
     product = db.session.get(Product, review.product_id)
     if product:
-        product.rating_sum -= review.rating
-        product.rating_count -= 1
+        # Запобігаємо від'ємним значенням
+        product.rating_sum = max(0, product.rating_sum - review.rating)
+        product.rating_count = max(0, product.rating_count - 1)
     
     db.session.delete(review)
     db.session.commit()
