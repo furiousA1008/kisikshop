@@ -11,25 +11,121 @@
         body { background: #0a0a0f; color: white; font-family: system-ui, -apple-system, sans-serif; }
         .gradient-text { background: linear-gradient(135deg, #ff6b35, #ffb347); -webkit-background-clip: text; background-clip: text; color: transparent; }
         
-        .gallery-container { position: relative; }
-        .main-image { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 20px; cursor: zoom-in; transition: transform 0.2s; }
-        .thumbnail { width: 80px; height: 80px; object-fit: cover; border-radius: 12px; cursor: pointer; opacity: 0.6; transition: all 0.2s; border: 2px solid transparent; }
-        .thumbnail:hover { opacity: 0.8; }
-        .thumbnail.active { opacity: 1; border-color: #ff6b35; }
+        /* ГАЛЕРЕЯ - основний стиль */
+        .gallery-container { 
+            position: relative; 
+            background: #1a1a2e; 
+            border-radius: 24px; 
+            overflow: hidden;
+        }
+        .main-image { 
+            width: 100%; 
+            aspect-ratio: 1 / 1; 
+            object-fit: cover; 
+            transition: transform 0.3s ease; 
+            cursor: zoom-in;
+        }
+        .main-image:hover { transform: scale(1.02); }
         
-       /* Замініть на простий контейнер: */
-        .gallery-container { position: relative; }
-        .main-image { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 20px; cursor: pointer; }
+        /* КОНТЕЙНЕР МІНІАТЮР З КНОПКАМИ */
+        .thumb-wrapper {
+            position: relative;
+            margin-top: 16px;
+            padding: 0 40px;
+        }
         
+        .thumbnail-container {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        
+        .thumbnail-container::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .thumbnail {
+            min-width: 80px;
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 16px;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        
+        .thumbnail:hover {
+            opacity: 0.8;
+            transform: scale(1.05);
+        }
+        
+        .thumbnail.active {
+            opacity: 1;
+            border-color: #ff6b35;
+            box-shadow: 0 0 0 2px rgba(255,107,53,0.3);
+        }
+        
+        /* КНОПКИ НАВІГАЦІЇ */
+        .thumb-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        
+        .thumb-nav:hover {
+            background: #ff6b35;
+            border-color: transparent;
+            transform: translateY(-50%) scale(1.1);
+        }
+        
+        .thumb-nav.left { left: 0; }
+        .thumb-nav.right { right: 0; }
+        
+        @media (max-width: 640px) {
+            .thumb-wrapper { padding: 0 30px; }
+            .thumbnail { min-width: 60px; width: 60px; height: 60px; border-radius: 12px; }
+            .thumb-nav { width: 28px; height: 28px; font-size: 10px; }
+        }
+        
+        /* ІНШІ СТИЛІ */
         .tab-btn { padding: 12px 24px; background: rgba(255,255,255,0.05); border: none; color: #9ca3af; cursor: pointer; transition: all 0.2s; font-weight: 600; border-radius: 12px; }
         .tab-btn.active { background: #ff6b35; color: white; }
         .tab-content { display: none; padding: 24px; background: rgba(255,255,255,0.03); border-radius: 20px; margin-top: 20px; }
         .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        .color-option { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
-        .color-option:hover { transform: scale(1.1); }
-        .color-option.selected { border-color: white; box-shadow: 0 0 0 2px #ff6b35; transform: scale(1.05); }
+        .color-option {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid rgba(255,255,255,0.2);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .color-option:hover { transform: scale(1.1); border-color: white; }
+        .color-option.selected { border: 2px solid white; box-shadow: 0 0 0 2px #ff6b35; transform: scale(1.05); }
         
         .size-option { padding: 10px 20px; background: rgba(255,255,255,0.05); border-radius: 12px; cursor: pointer; transition: all 0.2s; text-align: center; font-weight: 600; }
         .size-option:hover { background: rgba(255,107,53,0.3); }
@@ -50,94 +146,16 @@
         .star:hover { color: #ffb347; }
         
         .review-card { background: rgba(255,255,255,0.05); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
-        
         .favorite-btn { transition: all 0.2s; }
         .favorite-btn.active { color: #ef4444; }
         .favorite-btn:not(.active):hover { color: #ef4444; transform: scale(1.1); }
         
-        @media (max-width: 768px) {
-            .thumbnail { width: 60px; height: 60px; }
-            .tab-btn { padding: 8px 16px; font-size: 14px; }
-        }
-        /* Покращені стилі для вибору кольору */
-        .color-option {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 2px solid rgba(255,255,255,0.2);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .color-option:hover {
-            transform: scale(1.1);
-            border-color: white;
-        }
-
-        .color-option.selected {
-            border: 2px solid white;
-            box-shadow: 0 0 0 2px #ff6b35;
-            transform: scale(1.05);
-        }
-
-        /* Спеціальний стиль для чорного кольору */
-        .color-option[style*="background: rgb(0, 0, 0)"],
-        .color-option[style*="background: #000000"],
-        .color-option[style*="background: #000"] {
-            box-shadow: 0 0 0 1px rgba(255,255,255,0.5);
-        }
-
-        /* Кастомний скролбар для мініатюр - ЕСТЕТИЧНО */
-        .thumbnail-container::-webkit-scrollbar {
-            height: 4px;
-        }
-        
-        .thumbnail-container::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-        }
-        
-        .thumbnail-container::-webkit-scrollbar-thumb {
-            background: linear-gradient(90deg, #ff6b35, #ffb347);
-            border-radius: 10px;
-        }
-        
-        .thumbnail-container::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(90deg, #ff8c42, #ffc857);
-        }
-        
-        /* Для Firefox */
-        .thumbnail-container {
-            scrollbar-width: thin;
-            scrollbar-color: #ff6b35 rgba(255, 255, 255, 0.05);
-        }
-        
-        .color-option[style*="background: rgb(0, 0, 0)"]:hover,
-        .color-option[style*="background: #000000"]:hover,
-        .color-option[style*="background: #000"]:hover {
-            box-shadow: 0 0 0 2px white;
-        }
         @keyframes pulse-ring {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255,107,53,0.7); }
             70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255,107,53,0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255,107,53,0); }
         }
-        .fixed.bottom-6.right-6 {
-            animation: pulse-ring 2s infinite;
-        }
-        @media (max-width: 640px) {
-            .fixed.bottom-6.right-6 {
-                bottom: 16px;
-                right: 16px;
-                padding: 12px;
-            }
-            .fixed.bottom-6.right-6 i {
-                font-size: 20px;
-            }
-        }
+        .fixed.bottom-6.right-6 { animation: pulse-ring 2s infinite; }
     </style>
 </head>
 <body>
@@ -175,6 +193,7 @@
                         </button>
                         <div id="userDropdown" class="hidden absolute right-0 mt-2 bg-slate-800 rounded-xl shadow-xl w-48 z-50">
                             <button onclick="showFavorites()" class="w-full text-left px-4 py-2 text-sm hover:bg-white/10">❤️ Обране</button>
+                            <button onclick="showOrders()" class="w-full text-left px-4 py-2 text-sm hover:bg-white/10">📦 Мої замовлення</button>
                             <hr class="border-white/10">
                             <button onclick="logout()" class="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-white/10">🚪 Вийти</button>
                         </div>
@@ -190,7 +209,7 @@
         </div>
     </main>
 
-    <!-- Модалка кошика -->
+    <!-- Інші модалки (кошик, замовлення, обране, авторизація) -->
     <div id="cartModal" class="fixed hidden inset-0 bg-black/95 z-[1000] flex items-center justify-center backdrop-blur-md">
         <div class="bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6">
             <div class="flex justify-between items-center mb-4">
@@ -209,7 +228,6 @@
         </div>
     </div>
 
-    <!-- Модалка оформлення замовлення -->
     <div id="checkoutModal" class="fixed hidden inset-0 bg-black/95 z-[1000] flex items-center justify-center backdrop-blur-md">
         <div class="bg-slate-900 rounded-3xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6">
             <div class="flex justify-between items-center mb-4">
@@ -242,8 +260,7 @@
                 
                 <div class="mb-4">
                     <label class="block text-sm font-bold mb-2">Адреса відділення Нової Пошти *</label>
-                    <textarea id="checkoutAddress" rows="3" placeholder="Наприклад: м. Київ, вул. Хрещатик, 22, Нова Пошта №5" required class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 text-white resize-none"></textarea>
-                    <p class="text-xs text-gray-400 mt-1">Вкажіть місто, вулицю, номер відділення або поштомату</p>
+                    <textarea id="checkoutAddress" rows="3" placeholder="Наприклад: м. Київ, відділення №5" required class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 text-white resize-none"></textarea>
                 </div>
                 
                 <button type="submit" class="w-full bg-orange-500 py-3 rounded-xl font-bold hover:bg-orange-600 transition">✅ Підтвердити замовлення</button>
@@ -251,7 +268,6 @@
         </div>
     </div>
 
-    <!-- Модалка обраного -->
     <div id="favoritesModal" class="fixed hidden inset-0 bg-black/95 z-[1000] flex items-center justify-center backdrop-blur-md">
         <div class="bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6">
             <div class="flex justify-between items-center mb-4">
@@ -262,7 +278,16 @@
         </div>
     </div>
 
-    <!-- Модалка авторизації -->
+    <div id="ordersModal" class="fixed hidden inset-0 bg-black/95 z-[1000] flex items-center justify-center backdrop-blur-md">
+        <div class="bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-black"><i class="fas fa-box text-orange-500"></i> Мої замовлення</h2>
+                <button onclick="closeOrders()" class="text-gray-400 text-2xl hover:text-white">&times;</button>
+            </div>
+            <div id="ordersList"></div>
+        </div>
+    </div>
+
     <div id="authModal" class="fixed hidden inset-0 bg-black/95 z-[1000] flex items-center justify-center backdrop-blur-md">
         <div class="bg-slate-900 rounded-3xl max-w-md w-full p-8">
             <div class="flex justify-between items-center mb-6">
@@ -271,8 +296,8 @@
             </div>
             <form id="authForm">
                 <input type="hidden" id="authMode" value="login">
-                <input type="text" id="authUsername" placeholder="Логін" required class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 mb-4 text-white focus:border-orange-500">
-                <input type="password" id="authPassword" placeholder="Пароль" required class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 mb-4 text-white focus:border-orange-500">
+                <input type="text" id="authUsername" placeholder="Логін" required class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 mb-4 text-white">
+                <input type="password" id="authPassword" placeholder="Пароль" required class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 mb-4 text-white">
                 <button type="submit" class="w-full bg-orange-500 py-3 rounded-xl font-bold hover:bg-orange-600 transition">Увійти</button>
                 <p class="text-center text-sm text-gray-400 mt-4">
                     <span id="authSwitchText">Немає акаунту?</span>
@@ -281,18 +306,11 @@
             </form>
         </div>
     </div>
-        <!-- Кнопка зв'язку з менеджером (Telegram) -->
-    <a href="https://t.me/ArtSeXm" 
-       target="_blank" 
-       class="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-full p-4 shadow-2xl transition-all duration-300 hover:scale-110 group flex items-center justify-center"
-       style="box-shadow: 0 4px 15px rgba(255,107,53,0.4);">
-        <div class="relative">
-            <i class="fab fa-telegram-plane text-2xl group-hover:rotate-12 transition-transform duration-300"></i>
-            <span class="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></span>
-        </div>
+
+    <a href="https://t.me/ArtSeXm" target="_blank" class="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-full p-4 shadow-2xl transition-all duration-300 hover:scale-110 group flex items-center justify-center">
+        <i class="fab fa-telegram-plane text-2xl group-hover:rotate-12 transition-transform duration-300"></i>
         <span class="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-300 text-sm font-medium">Написати менеджеру</span>
     </a>
-
 
     <script>
         let product = null;
@@ -342,23 +360,17 @@
                     document.getElementById('authButtons').classList.add('hidden');
                     document.getElementById('userMenu').classList.remove('hidden');
                     document.getElementById('userName').textContent = currentUser.username;
-                    
                     if (currentUser.is_admin) {
-                        const adminBtn = document.getElementById('adminPanelBtn');
-                        if (adminBtn) adminBtn.classList.remove('hidden');
+                        document.getElementById('adminPanelBtn')?.classList.remove('hidden');
                     }
-                    
                     await checkFavoriteStatus();
                 } else {
                     currentUser = null;
                     document.getElementById('authButtons').classList.remove('hidden');
                     document.getElementById('userMenu').classList.add('hidden');
-                    const adminBtn = document.getElementById('adminPanelBtn');
-                    if (adminBtn) adminBtn.classList.add('hidden');
+                    document.getElementById('adminPanelBtn')?.classList.add('hidden');
                 }
-            } catch(e) { 
-                console.error('loadUser error:', e);
-            }
+            } catch(e) { console.error(e); }
         }
 
         async function checkFavoriteStatus() {
@@ -389,7 +401,6 @@
                 openAuth('login');
                 return;
             }
-            
             try {
                 if (isFavorite) {
                     await api(`/api/favorites/${productId}`, { method: 'DELETE' });
@@ -401,9 +412,7 @@
                     showToast('💖 Додано в обране');
                 }
                 updateFavoriteButton();
-            } catch(e) {
-                showToast('❌ ' + e.message, true);
-            }
+            } catch(e) { showToast('❌ ' + e.message, true); }
         }
 
         async function loadColors() {
@@ -424,13 +433,7 @@
                 await loadReviews();
                 renderProduct();
             } catch(e) {
-                document.getElementById('productContent').innerHTML = `
-                    <div class="text-center py-20">
-                        <i class="fas fa-exclamation-triangle text-6xl text-red-500 mb-4"></i>
-                        <p class="text-xl">Товар не знайдено</p>
-                        <a href="/" class="inline-block mt-6 px-6 py-3 bg-orange-500 rounded-xl hover:bg-orange-600">На головну</a>
-                    </div>
-                `;
+                document.getElementById('productContent').innerHTML = `<div class="text-center py-20"><i class="fas fa-exclamation-triangle text-6xl text-red-500 mb-4"></i><p class="text-xl">Товар не знайдено</p><a href="/" class="inline-block mt-6 px-6 py-3 bg-orange-500 rounded-xl">На головну</a></div>`;
             }
         }
 
@@ -446,14 +449,11 @@
                 openAuth('login');
                 return;
             }
-            
             if (userRating === 0) {
                 showToast('Оберіть оцінку', true);
                 return;
             }
-            
             const comment = document.getElementById('reviewComment').value;
-            
             try {
                 await api(`/api/products/${productId}/reviews`, {
                     method: 'POST',
@@ -465,9 +465,7 @@
                 renderStarRating();
                 await loadReviews();
                 await loadProduct();
-            } catch(e) {
-                showToast('❌ ' + e.message, true);
-            }
+            } catch(e) { showToast('❌ ' + e.message, true); }
         }
 
         function renderStarRating() {
@@ -478,22 +476,27 @@
                 const star = document.createElement('i');
                 star.className = `fas fa-star star ${i <= userRating ? 'active' : ''}`;
                 star.style.cursor = 'pointer';
-                star.onclick = () => {
-                    userRating = i;
-                    renderStarRating();
-                };
+                star.onclick = () => { userRating = i; renderStarRating(); };
                 container.appendChild(star);
             }
         }
 
         function openSizeChartModal() {
-            if (product.size_chart_url) {
+            if (product?.size_chart_url) {
                 const modal = document.createElement('div');
                 modal.className = 'size-chart-modal';
                 modal.onclick = () => modal.remove();
                 modal.innerHTML = `<img src="${product.size_chart_url}" alt="Розмірна сітка" onclick="event.stopPropagation()">`;
                 document.body.appendChild(modal);
             }
+        }
+
+        // Функції для гортання мініатюр
+        function scrollThumbnails(direction) {
+            const container = document.querySelector('.thumbnail-container');
+            if (!container) return;
+            const scrollAmount = 140;
+            container.scrollBy({ left: direction === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
         }
 
         function renderProduct() {
@@ -507,14 +510,18 @@
             container.innerHTML = `
                 <div class="grid md:grid-cols-2 gap-8 mb-12">
                     <div>
-                        <<div class="gallery-container mb-4">
+                        <div class="gallery-container mb-4">
                             <img src="${mainPhoto}" alt="${product.name}" class="main-image" id="mainImage">
                         </div>
                         ${photos.length > 1 ? `
-                            <div class="flex gap-3 overflow-x-auto pb-2">
-                                ${photos.map((photo, idx) => `
-                                    <img src="${photo}" class="thumbnail ${idx === 0 ? 'active' : ''}" onclick="changeImage(${idx})">
-                                `).join('')}
+                            <div class="thumb-wrapper">
+                                <button class="thumb-nav left" onclick="scrollThumbnails('left')"><i class="fas fa-chevron-left"></i></button>
+                                <div class="thumbnail-container">
+                                    ${photos.map((photo, idx) => `
+                                        <img src="${photo}" class="thumbnail ${idx === 0 ? 'active' : ''}" onclick="changeImage(${idx})">
+                                    `).join('')}
+                                </div>
+                                <button class="thumb-nav right" onclick="scrollThumbnails('right')"><i class="fas fa-chevron-right"></i></button>
                             </div>
                         ` : ''}
                         ${hasSizeChart ? `
@@ -539,31 +546,25 @@
                             </div>
                             <h1 class="text-3xl md:text-4xl font-black mb-3">${escapeHtml(product.name)}</h1>
                             <div class="flex items-center gap-2 mb-4">
-                                <div class="flex text-yellow-400">
-                                    ${renderStars(product.rating_avg)}
-                                </div>
+                                <div class="flex text-yellow-400">${renderStars(product.rating_avg)}</div>
                                 <span class="text-sm text-gray-400">${ratingDisplay} (${product.rating_count} відгуків)</span>
                             </div>
                             <p class="text-4xl font-bold text-orange-500 mb-4">${product.price} ₴</p>
-                            <p class="text-gray-400 mb-6">${product.description || 'Стильний та якісний товар від KISIK MARKET. Ідеально підходить для повсякденного носіння.'}</p>
+                            <p class="text-gray-400 mb-6">${product.description || 'Стильний та якісний товар від KISIK MARKET.'}</p>
                         </div>
-                        
                         
                         ${productColors.length > 0 ? `
                             <div class="mb-6">
-                                <p class="font-bold mb-3">Колір: <span id="selectedColorText" class="text-orange-400 font-semibold">${productColors[0]}</span></p>
+                                <p class="font-bold mb-3">Колір: <span id="selectedColorText" class="text-orange-400">${productColors[0]}</span></p>
                                 <div class="flex gap-3 flex-wrap" id="colorOptions">
                                     ${productColors.map(color => {
                                         const colorInfo = getColorInfo(color);
-                                        // Додаємо обводку для чорного кольору
                                         const isBlack = color === 'Чорний' || color.toLowerCase() === 'black';
-                                        const borderStyle = isBlack ? 'border: 2px solid white; box-shadow: 0 0 0 1px rgba(255,255,255,0.3);' : '';
                                         return `
                                             <div class="color-option ${color === productColors[0] ? 'selected' : ''}" 
-                                                 style="background: ${colorInfo.code}; ${borderStyle} width: 44px; height: 44px; border-radius: 50%; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; ${color === productColors[0] ? 'border: 2px solid white; box-shadow: 0 0 0 2px #ff6b35;' : 'border: 2px solid rgba(255,255,255,0.2);'}"
+                                                 style="background: ${colorInfo.code}; ${isBlack ? 'border: 2px solid white;' : ''}"
                                                  title="${color}"
                                                  onclick="selectColor('${color}')">
-                                                ${isBlack ? '<i class="fas fa-tshirt" style="color: white; font-size: 18px; text-shadow: 0 0 2px black;"></i>' : ''}
                                             </div>
                                         `;
                                     }).join('')}
@@ -572,19 +573,9 @@
                         ` : ''}
                         
                         <div class="mb-6">
-                            <p class="font-bold mb-3">Розмір: <span id="selectedSizeText">Оберіть розмір</span></p>
+                            <p class="font-bold mb-3">Розмір: <span id="selectedSizeText" class="text-orange-400">Оберіть розмір</span></p>
                             <div class="flex gap-3 flex-wrap" id="sizeOptions">
-                                ${product.sizes.map(size => `
-                                    <div class="size-option" onclick="selectSize('${size}')">${size}</div>
-                                `).join('')}
-                            </div>
-                        </div>
-                        
-                        <!-- Секція вибору кольору - ОНОВЛЕНА з кращою видимістю -->
-                        <div class="mb-6">
-                            <p class="font-bold mb-3">Колір: <span id="selectedColorText" class="text-orange-400"></span></p>
-                            <div class="flex gap-3 flex-wrap" id="colorOptions">
-                                <!-- Color options will be rendered here -->
+                                ${product.sizes.map(size => `<div class="size-option" onclick="selectSize('${size}')">${size}</div>`).join('')}
                             </div>
                         </div>
                         
@@ -605,7 +596,7 @@
                     </div>
                     
                     <div id="tab-description" class="tab-content active">
-                        <p class="text-gray-300 leading-relaxed">${product.description || 'Стильний та якісний товар від KISIK MARKET. Ідеально підходить для повсякденного носіння. Виготовлено з високоякісних матеріалів, що забезпечують комфорт та довговічність.'}</p>
+                        <p class="text-gray-300 leading-relaxed">${product.description || 'Стильний та якісний товар від KISIK MARKET.'}</p>
                     </div>
                     
                     <div id="tab-specs" class="tab-content">
@@ -614,18 +605,15 @@
                             <div class="flex py-2 border-b border-white/10"><span class="w-32 text-gray-400">Категорія:</span><span class="font-medium">${product.category}</span></div>
                             <div class="flex py-2 border-b border-white/10"><span class="w-32 text-gray-400">Матеріал:</span><span class="font-medium">${product.material || '100% бавовна'}</span></div>
                             <div class="flex py-2 border-b border-white/10"><span class="w-32 text-gray-400">Країна:</span><span class="font-medium">${product.country || 'Україна'}</span></div>
-                            <div class="flex py-2 border-b border-white/10"><span class="w-32 text-gray-400">Доступні розміри:</span><span class="font-medium">${product.sizes.join(', ')}</span></div>
-                            ${product.colors && product.colors.length ? `<div class="flex py-2 border-b border-white/10"><span class="w-32 text-gray-400">Кольори:</span><span class="font-medium">${product.colors.join(', ')}</span></div>` : ''}
+                            <div class="flex py-2 border-b border-white/10"><span class="w-32 text-gray-400">Розміри:</span><span class="font-medium">${product.sizes.join(', ')}</span></div>
+                            ${productColors.length ? `<div class="flex py-2 border-b border-white/10"><span class="w-32 text-gray-400">Кольори:</span><span class="font-medium">${productColors.join(', ')}</span></div>` : ''}
                         </div>
                     </div>
                     
                     <div id="tab-reviews" class="tab-content">
                         <div class="mb-6">
                             <h3 class="text-xl font-bold mb-4">Залишити відгук</h3>
-                            <div class="mb-3">
-                                <p class="text-sm mb-2">Ваша оцінка:</p>
-                                <div id="starRating" class="star-rating"></div>
-                            </div>
+                            <div class="mb-3"><p class="text-sm mb-2">Ваша оцінка:</p><div id="starRating" class="star-rating"></div></div>
                             <textarea id="reviewComment" rows="3" placeholder="Ваш коментар..." class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 text-white resize-none mb-3"></textarea>
                             <button onclick="submitReview()" class="bg-orange-500 px-6 py-2 rounded-xl font-bold hover:bg-orange-600 transition">Додати відгук</button>
                         </div>
@@ -650,38 +638,11 @@
                     
                     <div id="tab-delivery" class="tab-content">
                         <div class="space-y-4">
-                            <div class="flex gap-4 p-4 bg-white/5 rounded-xl">
-                                <i class="fas fa-truck text-3xl text-orange-400"></i>
-                                <div>
-                                    <h4 class="font-bold mb-2">Доставка Новою Поштою</h4>
-                                    <p class="text-gray-400 text-sm">Доставка по всій Україні. Вартість згідно з тарифами перевізника.</p>
-                                </div>
-                            </div>
-                            <div class="flex gap-4 p-4 bg-white/5 rounded-xl">
-                                <i class="fas fa-credit-card text-3xl text-orange-400"></i>
-                                <div>
-                                    <h4 class="font-bold mb-2">Способи оплати</h4>
-                                    <p class="text-gray-400 text-sm">• Повна оплата онлайн<br>• Часткова оплата (30% передплата)<br>• Оплата при отриманні на пошті</p>
-                                </div>
-                            </div>
-                            <div class="flex gap-4 p-4 bg-white/5 rounded-xl">
-                                <i class="fas fa-undo-alt text-3xl text-orange-400"></i>
-                                <div>
-                                    <h4 class="font-bold mb-2">Повернення та обмін</h4>
-                                    <p class="text-gray-400 text-sm">Протягом 14 днів з моменту отримання. Товар має бути не використаний.</p>
-                                </div>
-                            </div>
+                            <div class="flex gap-4 p-4 bg-white/5 rounded-xl"><i class="fas fa-truck text-3xl text-orange-400"></i><div><h4 class="font-bold mb-2">Доставка Новою Поштою</h4><p class="text-gray-400 text-sm">Доставка по всій Україні.</p></div></div>
+                            <div class="flex gap-4 p-4 bg-white/5 rounded-xl"><i class="fas fa-credit-card text-3xl text-orange-400"></i><div><h4 class="font-bold mb-2">Способи оплати</h4><p class="text-gray-400 text-sm">Повна оплата • Часткова (30%) • Оплата на пошті</p></div></div>
+                            <div class="flex gap-4 p-4 bg-white/5 rounded-xl"><i class="fas fa-undo-alt text-3xl text-orange-400"></i><div><h4 class="font-bold mb-2">Повернення</h4><p class="text-gray-400 text-sm">Протягом 14 днів.</p></div></div>
                         </div>
                     </div>
-                    
-                    ${hasSizeChart ? `
-                        <div id="tab-size-chart" class="tab-content">
-                            <div class="text-center">
-                                <img src="${product.size_chart_url}" alt="Розмірна сітка" class="max-w-full rounded-xl cursor-pointer" onclick="openSizeChartModal()">
-                                <p class="text-sm text-gray-400 mt-3">Натисніть на зображення для збільшення</p>
-                            </div>
-                        </div>
-                    ` : ''}
                 </div>
             `;
             
@@ -734,17 +695,11 @@
             });
         }
 
-        function changeQuantity(delta) {
-            quantity = Math.max(1, Math.min(99, quantity + delta));
-            document.getElementById('quantity').textContent = quantity;
-        }
-
         function switchTab(tab) {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
             const btns = document.querySelectorAll('.tab-btn');
-            const contents = ['description', 'specs', 'reviews', 'delivery', 'size-chart'];
+            const contents = ['description', 'specs', 'reviews', 'delivery'];
             const index = contents.indexOf(tab);
             if (index >= 0 && btns[index]) btns[index].classList.add('active');
             document.getElementById(`tab-${tab}`).classList.add('active');
@@ -755,22 +710,14 @@
                 showToast('❌ Будь ласка, оберіть розмір', true);
                 return;
             }
-            
             try {
                 await api('/api/cart', {
                     method: 'POST',
-                    body: JSON.stringify({
-                        product_id: product.id,
-                        size: selectedSize,
-                        color: selectedColor,
-                        quantity: quantity
-                    })
+                    body: JSON.stringify({ product_id: product.id, size: selectedSize, color: selectedColor, quantity })
                 });
                 await loadCart();
                 showToast('✅ Товар додано в кошик');
-            } catch(e) {
-                showToast('❌ ' + e.message, true);
-            }
+            } catch(e) { showToast('❌ ' + e.message, true); }
         }
 
         async function loadCart() {
@@ -787,10 +734,7 @@
             else { badge.classList.add('hidden'); }
         }
 
-        function toggleCart() {
-            renderCart();
-            document.getElementById('cartModal').classList.toggle('hidden');
-        }
+        function toggleCart() { renderCart(); document.getElementById('cartModal').classList.toggle('hidden'); }
 
         async function renderCart() {
             const container = document.getElementById('cartItems');
@@ -804,23 +748,7 @@
             let total = 0;
             container.innerHTML = cartItems.map(item => {
                 total += item.price * item.quantity;
-                return `
-                    <div class="flex gap-4 p-4 bg-white/5 rounded-2xl mb-3">
-                        <img src="${item.photo || 'https://placehold.co/80'}" class="w-20 h-20 rounded-xl object-cover">
-                        <div class="flex-1">
-                            <h4 class="font-bold">${escapeHtml(item.name)}</h4>
-                            <p class="text-sm">Розмір: ${item.size}</p>
-                            ${item.color ? `<p class="text-sm">Колір: ${item.color}</p>` : ''}
-                            <p class="text-orange-400">${item.price} грн</p>
-                            <div class="flex items-center gap-2 mt-2">
-                                <button onclick="updateQty(${item.id}, ${item.quantity - 1})" class="w-8 h-8 bg-white/10 rounded-full">-</button>
-                                <span>${item.quantity}</span>
-                                <button onclick="updateQty(${item.id}, ${item.quantity + 1})" class="w-8 h-8 bg-white/10 rounded-full">+</button>
-                                <button onclick="removeItem(${item.id})" class="ml-auto text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                return `<div class="flex gap-4 p-4 bg-white/5 rounded-2xl mb-3"><img src="${item.photo || 'https://placehold.co/80'}" class="w-20 h-20 rounded-xl object-cover"><div class="flex-1"><h4 class="font-bold">${escapeHtml(item.name)}</h4><p class="text-sm">Розмір: ${item.size}</p>${item.color ? `<p class="text-sm">Колір: ${item.color}</p>` : ''}<p class="text-orange-400">${item.price} грн</p><div class="flex items-center gap-2 mt-2"><button onclick="updateQty(${item.id}, ${item.quantity - 1})" class="w-8 h-8 bg-white/10 rounded-full">-</button><span>${item.quantity}</span><button onclick="updateQty(${item.id}, ${item.quantity + 1})" class="w-8 h-8 bg-white/10 rounded-full">+</button><button onclick="removeItem(${item.id})" class="ml-auto text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button></div></div></div>`;
             }).join('');
             document.getElementById('cartTotal').textContent = total + ' грн';
         }
@@ -839,10 +767,7 @@
         }
 
         function openCheckout() {
-            if (!cartItems.length) {
-                showToast('Кошик порожній', true);
-                return;
-            }
+            if (!cartItems.length) { showToast('Кошик порожній', true); return; }
             toggleCart();
             document.getElementById('checkoutModal').classList.remove('hidden');
         }
@@ -851,7 +776,6 @@
 
         document.getElementById('checkoutForm').onsubmit = async (e) => {
             e.preventDefault();
-            
             const name = document.getElementById('checkoutName').value.trim();
             const phone = document.getElementById('checkoutPhone').value.trim();
             const email = document.getElementById('checkoutEmail').value.trim();
@@ -859,91 +783,60 @@
             const warehouse_address = document.getElementById('checkoutAddress').value.trim();
             const payment_method = document.querySelector('input[name="paymentMethod"]:checked').value;
             
-            if (!name || !phone || !city || !warehouse_address) { 
-                showToast('❌ Заповніть всі обов\'язкові поля', true); 
-                return; 
-            }
+            if (!name || !phone || !city || !warehouse_address) { showToast('❌ Заповніть всі поля', true); return; }
             
-            const submitBtn = document.querySelector('#checkoutForm button[type="submit"]');
-            submitBtn.disabled = true;
-            submitBtn.textContent = '⏳ Відправка...';
-            
+            const btn = document.querySelector('#checkoutForm button[type="submit"]');
+            btn.disabled = true; btn.textContent = '⏳ Відправка...';
             try {
-                const data = await api('/api/checkout', { 
-                    method: 'POST', 
-                    body: JSON.stringify({ 
-                        name, phone, email, city, warehouse_address, payment_method
-                    }) 
-                });
-                
-                showToast(`✅ Замовлення №${data.order_number} створено! Дякуємо!`);
+                const data = await api('/api/checkout', { method: 'POST', body: JSON.stringify({ name, phone, email, city, warehouse_address, payment_method }) });
+                showToast(`✅ Замовлення №${data.order_number} створено!`);
                 closeCheckout();
                 await loadCart();
                 renderCart();
-                
                 document.getElementById('checkoutName').value = '';
                 document.getElementById('checkoutPhone').value = '';
                 document.getElementById('checkoutEmail').value = '';
                 document.getElementById('checkoutCity').value = '';
                 document.getElementById('checkoutAddress').value = '';
-                
-            } catch(e) { 
-                showToast('❌ ' + e.message, true); 
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = '✅ Підтвердити замовлення';
-            }
+            } catch(e) { showToast('❌ ' + e.message, true); }
+            finally { btn.disabled = false; btn.textContent = '✅ Підтвердити замовлення'; }
         };
 
         async function showFavorites() {
-            if (!currentUser) {
-                showToast('Увійдіть в акаунт', true);
-                return;
-            }
+            if (!currentUser) { showToast('Увійдіть в акаунт', true); return; }
             try {
                 const favoriteIds = await api('/api/favorites');
-                if (!favoriteIds.length) {
-                    document.getElementById('favoritesList').innerHTML = '<div class="text-center py-10 text-gray-400">❤️ У вас ще немає обраних товарів</div>';
-                } else {
+                if (!favoriteIds.length) document.getElementById('favoritesList').innerHTML = '<div class="text-center py-10 text-gray-400">❤️ Немає обраних товарів</div>';
+                else {
                     const productsData = await Promise.all(favoriteIds.map(id => api(`/api/products/${id}`)));
-                    document.getElementById('favoritesList').innerHTML = productsData.map(p => `
-                        <div class="flex gap-4 p-4 bg-white/5 rounded-2xl mb-3 cursor-pointer" onclick="location.href='/product/${p.id}'">
-                            <img src="${p.photos[0] || 'https://placehold.co/80'}" class="w-20 h-20 rounded-xl object-cover">
-                            <div class="flex-1">
-                                <h4 class="font-bold">${escapeHtml(p.name)}</h4>
-                                <p class="text-orange-400 font-bold">${p.price} грн</p>
-                                <div class="flex text-yellow-400 text-sm mt-1">${renderStars(p.rating_avg)}</div>
-                            </div>
-                        </div>
-                    `).join('');
+                    document.getElementById('favoritesList').innerHTML = productsData.map(p => `<div class="flex gap-4 p-4 bg-white/5 rounded-2xl mb-3 cursor-pointer" onclick="location.href='/product/${p.id}'"><img src="${p.photos[0] || 'https://placehold.co/80'}" class="w-20 h-20 rounded-xl object-cover"><div class="flex-1"><h4 class="font-bold">${escapeHtml(p.name)}</h4><p class="text-orange-400 font-bold">${p.price} грн</p><div class="flex text-yellow-400 text-sm">${renderStars(p.rating_avg)}</div></div></div>`).join('');
                 }
                 document.getElementById('favoritesModal').classList.remove('hidden');
             } catch(e) { showToast('❌ ' + e.message, true); }
         }
 
+        async function showOrders() {
+            if (!currentUser) { showToast('Увійдіть в акаунт', true); return; }
+            try {
+                const orders = await api('/api/orders');
+                if (!orders.length) document.getElementById('ordersList').innerHTML = '<div class="text-center py-10 text-gray-400">📦 У вас ще немає замовлень</div>';
+                else {
+                    document.getElementById('ordersList').innerHTML = orders.map(o => `<div class="p-4 bg-white/5 rounded-2xl mb-3"><div class="flex justify-between"><span class="font-bold">№${o.order_number}</span><span class="text-orange-400">${o.total_price} грн</span></div><p class="text-sm text-gray-400">${new Date(o.created_at).toLocaleDateString()}</p><span class="inline-block mt-2 px-2 py-1 bg-orange-500/20 rounded-lg text-xs">${o.status === 'new' ? 'Нове' : o.status === 'completed' ? 'Виконано' : o.status}</span></div>`).join('');
+                }
+                document.getElementById('ordersModal').classList.remove('hidden');
+            } catch(e) { showToast('❌ ' + e.message, true); }
+        }
+
         function closeFavorites() { document.getElementById('favoritesModal').classList.add('hidden'); }
+        function closeOrders() { document.getElementById('ordersModal').classList.add('hidden'); }
 
         function openAuth(mode) {
             document.getElementById('authMode').value = mode;
             document.getElementById('authTitle').textContent = mode === 'login' ? 'Вхід' : 'Реєстрація';
-            const switchText = document.getElementById('authSwitchText');
-            const switchBtn = document.querySelector('#authForm .text-orange-500');
-            if (mode === 'login') {
-                switchText.textContent = 'Немає акаунту?';
-                if (switchBtn) switchBtn.textContent = 'Зареєструватись';
-            } else {
-                switchText.textContent = 'Вже є акаунт?';
-                if (switchBtn) switchBtn.textContent = 'Увійти';
-            }
             document.getElementById('authModal').classList.remove('hidden');
         }
-
         function closeAuth() { document.getElementById('authModal').classList.add('hidden'); }
-
-        function switchAuthMode() {
-            const mode = document.getElementById('authMode').value;
-            openAuth(mode === 'login' ? 'register' : 'login');
-        }
+        function switchAuthMode() { openAuth(document.getElementById('authMode').value === 'login' ? 'register' : 'login'); }
 
         document.getElementById('authForm').onsubmit = async (e) => {
             e.preventDefault();
@@ -951,8 +844,7 @@
             const username = document.getElementById('authUsername').value;
             const password = document.getElementById('authPassword').value;
             try {
-                const endpoint = mode === 'login' ? '/api/login' : '/api/register';
-                await api(endpoint, { method: 'POST', body: JSON.stringify({ username, password }) });
+                await api(mode === 'login' ? '/api/login' : '/api/register', { method: 'POST', body: JSON.stringify({ username, password }) });
                 showToast(mode === 'login' ? '✅ Вхід виконано' : '✅ Реєстрація успішна');
                 closeAuth();
                 await loadUser();
@@ -961,34 +853,16 @@
             } catch(e) { showToast('❌ ' + e.message, true); }
         };
 
-        async function logout() {
-            await api('/api/logout', { method: 'POST' });
-            window.location.href = '/';
-        }
-
-        function toggleUserMenu() {
-            const dropdown = document.getElementById('userDropdown');
-            dropdown.classList.toggle('hidden');
-        }
-
-        function escapeHtml(str) {
-            if (!str) return '';
-            return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
-        }
+        async function logout() { await api('/api/logout', { method: 'POST' }); window.location.href = '/'; }
+        function toggleUserMenu() { document.getElementById('userDropdown').classList.toggle('hidden'); }
+        function escapeHtml(str) { if (!str) return ''; return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
 
         document.addEventListener('click', (e) => {
             const menu = document.getElementById('userMenu');
-            if (menu && !menu.contains(e.target) && !document.getElementById('userDropdown')?.contains(e.target)) {
-                document.getElementById('userDropdown')?.classList.add('hidden');
-            }
+            if (menu && !menu.contains(e.target)) document.getElementById('userDropdown')?.classList.add('hidden');
         });
 
-        async function init() {
-            await loadUser();
-            await loadProduct();
-            await loadCart();
-        }
-        
+        async function init() { await loadUser(); await loadProduct(); await loadCart(); }
         init();
     </script>
 </body>
