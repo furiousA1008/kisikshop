@@ -90,6 +90,31 @@
             box-shadow: 0 0 0 1px rgba(255,255,255,0.5);
         }
 
+        /* Кастомний скролбар для мініатюр - ЕСТЕТИЧНО */
+        .thumbnail-container::-webkit-scrollbar {
+            height: 4px;
+        }
+        
+        .thumbnail-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        
+        .thumbnail-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(90deg, #ff6b35, #ffb347);
+            border-radius: 10px;
+        }
+        
+        .thumbnail-container::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(90deg, #ff8c42, #ffc857);
+        }
+        
+        /* Для Firefox */
+        .thumbnail-container {
+            scrollbar-width: thin;
+            scrollbar-color: #ff6b35 rgba(255, 255, 255, 0.05);
+        }
+        
         .color-option[style*="background: rgb(0, 0, 0)"]:hover,
         .color-option[style*="background: #000000"]:hover,
         .color-option[style*="background: #000"]:hover {
