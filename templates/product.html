@@ -6,7 +6,7 @@
     <title>KISIK MARKET | Товар</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- Select2 для красивого пошуку -->
+    <!-- Select2 -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -14,42 +14,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; color: white; font-family: system-ui, -apple-system, sans-serif; }
         .gradient-text { background: linear-gradient(135deg, #ff6b35, #ffb347); -webkit-background-clip: text; background-clip: text; color: transparent; }
-        
-        /* Стилі для Select2 на темному тлі */
-        .select2-container--default .select2-selection--single {
-            background-color: #1e293b;
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px;
-            height: 48px;
-            display: flex;
-            align-items: center;
-        }
-        .select2-container--default .select2-selection--single .select2-selection__rendered {
-            color: white;
-            line-height: 46px;
-            padding-left: 16px;
-        }
-        .select2-container--default .select2-selection--single .select2-selection__arrow {
-            height: 46px;
-            right: 12px;
-        }
-        .select2-dropdown {
-            background-color: #1e293b;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .select2-container--default .select2-results__option--highlighted[aria-selected] {
-            background-color: #ff6b35;
-        }
-        .select2-container--default .select2-results__option {
-            color: white;
-        }
-        .select2-search__field {
-            background-color: #0f172a !important;
-            border: 1px solid rgba(255,255,255,0.1) !important;
-            color: white !important;
-            border-radius: 8px !important;
-            padding: 8px !important;
-        }
         
         /* ГАЛЕРЕЯ */
         .gallery-container { position: relative; background: #1a1a2e; border-radius: 24px; overflow: hidden; }
@@ -114,7 +78,128 @@
         }
         .fixed.bottom-6.right-6 { animation: pulse-ring 2s infinite; }
         
-        .warehouse-loading { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,107,53,0.3); border-top-color: #ff6b35; border-radius: 50%; animation: spin 0.8s linear infinite; margin-left: 8px; }
+        /* ========== СТИЛІ ДЛЯ МОДАЛКИ ЗАМОВЛЕННЯ ========== */
+        .checkout-modal-container {
+            background: linear-gradient(145deg, #0f0f1a 0%, #0a0a0f 100%);
+            border-radius: 32px;
+            border: 1px solid rgba(255,107,53,0.2);
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,107,53,0.1);
+        }
+        
+        .checkout-input {
+            background: rgba(20, 20, 35, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 14px 16px;
+            color: white;
+            font-size: 15px;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .checkout-input:focus {
+            outline: none;
+            border-color: #ff6b35;
+            box-shadow: 0 0 0 3px rgba(255,107,53,0.2);
+        }
+        .checkout-input::placeholder {
+            color: rgba(255,255,255,0.3);
+        }
+        
+        .payment-option {
+            background: rgba(20, 20, 35, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 14px 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .payment-option:hover {
+            background: rgba(255,107,53,0.1);
+            border-color: rgba(255,107,53,0.3);
+        }
+        .payment-option.selected {
+            background: linear-gradient(135deg, rgba(255,107,53,0.15), rgba(255,107,53,0.05));
+            border-color: #ff6b35;
+        }
+        
+        .submit-btn {
+            background: linear-gradient(135deg, #ff6b35, #ff8c42);
+            border-radius: 14px;
+            padding: 16px;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+            color: white;
+            width: 100%;
+        }
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255,107,53,0.3);
+        }
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+        
+        /* Select2 темна тема */
+        .select2-container--default .select2-selection--single {
+            background-color: rgba(20, 20, 35, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            height: 52px;
+            display: flex;
+            align-items: center;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: white;
+            line-height: 50px;
+            padding-left: 16px;
+            font-size: 15px;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 50px;
+            right: 12px;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow b {
+            border-color: rgba(255,255,255,0.6) transparent transparent transparent;
+        }
+        .select2-dropdown {
+            background-color: #1a1a2e;
+            border: 1px solid rgba(255,107,53,0.2);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: #ff6b35;
+        }
+        .select2-container--default .select2-results__option {
+            color: #e2e8f0;
+            padding: 10px 16px;
+        }
+        .select2-container--default .select2-results__option[aria-selected="true"] {
+            background-color: rgba(255,107,53,0.2);
+            color: #ff6b35;
+        }
+        .select2-search__field {
+            background-color: #0f172a !important;
+            border: 1px solid rgba(255,107,53,0.2) !important;
+            color: white !important;
+            border-radius: 10px !important;
+            padding: 10px !important;
+        }
+        .select2-search__field:focus {
+            border-color: #ff6b35 !important;
+            box-shadow: none !important;
+        }
+        .select2-container--default .select2-search--dropdown .select2-search__field {
+            background-color: #0f172a;
+        }
+        
+        /* Стилі для списку відділень */
+        .warehouse-option {
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
@@ -187,51 +272,129 @@
         </div>
     </div>
 
-    <!-- Модалка оформлення замовлення з інтеграцією Нової Пошти -->
-    <div id="checkoutModal" class="fixed hidden inset-0 bg-black/95 z-[1000] flex items-center justify-center backdrop-blur-md">
-        <div class="bg-slate-900 rounded-3xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-black">Оформлення замовлення</h2>
-                <button onclick="closeCheckout()" class="text-gray-400 text-2xl hover:text-white">&times;</button>
+    <!-- КРАСИВА МОДАЛКА ОФОРМЛЕННЯ ЗАМОВЛЕННЯ -->
+    <div id="checkoutModal" class="fixed hidden inset-0 bg-black/90 z-[1000] flex items-center justify-center backdrop-blur-md p-4">
+        <div class="checkout-modal-container w-full max-w-md overflow-y-auto max-h-[90vh]">
+            <!-- Заголовок -->
+            <div class="p-5 border-b border-white/10 flex justify-between items-center sticky top-0 bg-[#0f0f1a] rounded-t-2xl z-10">
+                <div>
+                    <h2 class="text-xl font-black"><span class="gradient-text">Оформлення</span> замовлення</h2>
+                    <p class="text-xs text-gray-500 mt-1">Заповніть дані для доставки</p>
+                </div>
+                <button onclick="closeCheckout()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition flex items-center justify-center">
+                    <i class="fas fa-times text-gray-400"></i>
+                </button>
             </div>
-            <form id="checkoutForm">
-                <input type="text" id="checkoutName" placeholder="ПІБ *" required class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 mb-3 text-white">
-                <input type="tel" id="checkoutPhone" placeholder="Номер телефону *" required class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 mb-3 text-white">
-                <input type="email" id="checkoutEmail" placeholder="Email (необов'язково)" class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 mb-3 text-white">
+            
+            <form id="checkoutForm" class="p-5 space-y-4">
+                <!-- ПІБ -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1.5">
+                        <i class="fas fa-user text-orange-400 w-4 mr-1"></i> ПІБ <span class="text-orange-400">*</span>
+                    </label>
+                    <input type="text" id="checkoutName" placeholder="Іванов Іван Іванович" required class="checkout-input">
+                </div>
                 
-                <!-- Вибір міста через API Нової Пошти -->
-                <div class="mb-3">
-                    <select id="checkoutCity" class="w-full city-select" style="width: 100%;">
-                        <option value="">Пошук міста...</option>
+                <!-- Телефон -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1.5">
+                        <i class="fas fa-phone text-orange-400 w-4 mr-1"></i> Номер телефону <span class="text-orange-400">*</span>
+                    </label>
+                    <input type="tel" id="checkoutPhone" placeholder="099 123 45 67" required class="checkout-input">
+                </div>
+                
+                <!-- Email -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1.5">
+                        <i class="fas fa-envelope text-orange-400 w-4 mr-1"></i> Email
+                    </label>
+                    <input type="email" id="checkoutEmail" placeholder="example@mail.com" class="checkout-input">
+                    <p class="text-xs text-gray-500 mt-1">Для отримання підтвердження</p>
+                </div>
+                
+                <!-- Місто (Select2) -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1.5">
+                        <i class="fas fa-city text-orange-400 w-4 mr-1"></i> Місто <span class="text-orange-400">*</span>
+                    </label>
+                    <select id="checkoutCity" class="city-select" style="width: 100%;">
+                        <option value="">Введіть назву міста...</option>
                     </select>
                 </div>
                 
-                <!-- Вибір відділення через API Нової Пошти -->
-                <div class="mb-4">
-                    <select id="checkoutWarehouse" class="w-full warehouse-select" style="width: 100%;" disabled>
+                <!-- Відділення (Select2) -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1.5">
+                        <i class="fas fa-warehouse text-orange-400 w-4 mr-1"></i> Відділення Нова Пошта <span class="text-orange-400">*</span>
+                    </label>
+                    <select id="checkoutWarehouse" class="warehouse-select" style="width: 100%;" disabled>
                         <option value="">Спочатку оберіть місто...</option>
                     </select>
                 </div>
                 
-                <div class="mb-4">
-                    <label class="block text-sm font-bold mb-2">Спосіб оплати *</label>
+                <!-- Спосіб оплати -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                        <i class="fas fa-credit-card text-orange-400 w-4 mr-1"></i> Спосіб оплати <span class="text-orange-400">*</span>
+                    </label>
                     <div class="space-y-2">
-                        <label class="flex items-center gap-3 p-3 bg-slate-800 rounded-xl cursor-pointer hover:bg-slate-700">
-                            <input type="radio" name="paymentMethod" value="full" checked class="w-4 h-4 text-orange-500">
-                            <span><i class="fas fa-credit-card text-green-400"></i> Повна оплата (онлайн)</span>
-                        </label>
-                        <label class="flex items-center gap-3 p-3 bg-slate-800 rounded-xl cursor-pointer hover:bg-slate-700">
-                            <input type="radio" name="paymentMethod" value="partial" class="w-4 h-4 text-orange-500">
-                            <span><i class="fas fa-percent text-yellow-400"></i> Часткова оплата (30% передплата)</span>
-                        </label>
-                        <label class="flex items-center gap-3 p-3 bg-slate-800 rounded-xl cursor-pointer hover:bg-slate-700">
-                            <input type="radio" name="paymentMethod" value="post" class="w-4 h-4 text-orange-500">
-                            <span><i class="fas fa-truck text-blue-400"></i> Оплата на пошті</span>
-                        </label>
+                        <div class="payment-option selected" data-payment="full" onclick="selectPaymentMethod('full', this)">
+                            <div class="flex items-center gap-3">
+                                <div class="w-5 h-5 rounded-full border-2 border-white/30 flex items-center justify-center">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-orange-500"></div>
+                                </div>
+                                <div class="flex-1">
+                                    <span class="font-medium">💳 Повна оплата</span>
+                                    <p class="text-xs text-gray-500">Оплата онлайн карткою</p>
+                                </div>
+                                <i class="fas fa-lock text-green-500 text-sm"></i>
+                            </div>
+                        </div>
+                        <div class="payment-option" data-payment="partial" onclick="selectPaymentMethod('partial', this)">
+                            <div class="flex items-center gap-3">
+                                <div class="w-5 h-5 rounded-full border-2 border-white/30 flex items-center justify-center">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-transparent"></div>
+                                </div>
+                                <div class="flex-1">
+                                    <span class="font-medium">💸 Часткова оплата</span>
+                                    <p class="text-xs text-gray-500">30% передплата, 70% при отриманні</p>
+                                </div>
+                                <i class="fas fa-percent text-yellow-500 text-sm"></i>
+                            </div>
+                        </div>
+                        <div class="payment-option" data-payment="post" onclick="selectPaymentMethod('post', this)">
+                            <div class="flex items-center gap-3">
+                                <div class="w-5 h-5 rounded-full border-2 border-white/30 flex items-center justify-center">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-transparent"></div>
+                                </div>
+                                <div class="flex-1">
+                                    <span class="font-medium">📦 Оплата на пошті</span>
+                                    <p class="text-xs text-gray-500">Оплата готівкою при отриманні</p>
+                                </div>
+                                <i class="fas fa-truck text-blue-500 text-sm"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
-                <button type="submit" class="w-full bg-orange-500 py-3 rounded-xl font-bold hover:bg-orange-600 transition">✅ Підтвердити замовлення</button>
+                <!-- Підсумок -->
+                <div class="bg-gradient-to-r from-orange-500/10 to-orange-600/5 rounded-xl p-4 mt-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-400">До сплати:</span>
+                        <span class="text-2xl font-bold text-orange-500" id="checkoutTotalPrice">0 грн</span>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2 text-center">
+                        <i class="fas fa-shield-alt mr-1"></i> Безпечна оплата
+                    </p>
+                </div>
+                
+                <button type="submit" class="submit-btn">
+                    <i class="fas fa-check-circle mr-2"></i> Підтвердити замовлення
+                </button>
+                
+                <p class="text-center text-xs text-gray-500 pt-2">
+                    Натискаючи кнопку, ви погоджуєтесь з <a href="#" class="text-orange-400">умовами</a> магазину
+                </p>
             </form>
         </div>
     </div>
@@ -291,11 +454,10 @@
         let reviews = [];
         let isFavorite = false;
         let userRating = 0;
+        let selectedPaymentMethod = 'full';
         
-        // API ключ Нової Пошти (ваш)
         const NOVA_POSHTA_API_KEY = "d00481d682b0f3e592170022f9b8b6b4";
         const NOVA_POSHTA_API_URL = "https://api.novaposhta.ua/v2.0/json/";
-
         const productId = {{ product_id }};
 
         async function api(url, options = {}) {
@@ -366,7 +528,7 @@
                 if (data.success && data.data) {
                     return data.data.map(warehouse => ({
                         id: warehouse.Ref,
-                        name: `${warehouse.Description} (${warehouse.ShortAddress})`,
+                        name: `${warehouse.Description}${warehouse.ShortAddress ? ' (' + warehouse.ShortAddress + ')' : ''}`,
                         number: warehouse.Number
                     }));
                 }
@@ -377,10 +539,21 @@
             }
         }
 
-        // Ініціалізація Select2 для міст
+        function selectPaymentMethod(method, element) {
+            selectedPaymentMethod = method;
+            document.querySelectorAll('.payment-option').forEach(opt => {
+                opt.classList.remove('selected');
+                const circle = opt.querySelector('.w-2.5');
+                if (circle) circle.classList.add('bg-transparent');
+            });
+            element.classList.add('selected');
+            const selectedCircle = element.querySelector('.w-2.5');
+            if (selectedCircle) selectedCircle.classList.remove('bg-transparent');
+        }
+
         function initCitySelect() {
             $('#checkoutCity').select2({
-                placeholder: "Пошук міста...",
+                placeholder: "Введіть назву міста...",
                 allowClear: false,
                 width: '100%',
                 dropdownParent: $('#checkoutModal'),
@@ -404,17 +577,7 @@
                 }
             }).on('change', async function(e) {
                 const cityRef = e.target.value;
-                const cityName = $('#checkoutCity option:selected').text();
                 
-                // Зберігаємо назву міста в приховане поле
-                $('#checkoutCityName').remove();
-                $('<input>').attr({
-                    type: 'hidden',
-                    id: 'checkoutCityName',
-                    value: cityName
-                }).appendTo('#checkoutForm');
-                
-                // Завантажуємо відділення
                 const warehouseSelect = $('#checkoutWarehouse');
                 warehouseSelect.prop('disabled', true);
                 warehouseSelect.html('<option value="">Завантаження відділень...</option>');
@@ -524,6 +687,8 @@
                 await loadColors();
                 await loadReviews();
                 renderProduct();
+                // Оновлюємо загальну ціну в модалці
+                updateCheckoutTotal();
             } catch(e) {
                 document.getElementById('productContent').innerHTML = `<div class="text-center py-20"><i class="fas fa-exclamation-triangle text-6xl text-red-500 mb-4"></i><p class="text-xl">Товар не знайдено</p><a href="/" class="inline-block mt-6 px-6 py-3 bg-orange-500 rounded-xl">На головну</a></div>`;
             }
@@ -533,6 +698,11 @@
             try {
                 reviews = await api(`/api/products/${productId}/reviews`);
             } catch(e) { console.error(e); }
+        }
+
+        function updateCheckoutTotal() {
+            const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            document.getElementById('checkoutTotalPrice').textContent = total + ' грн';
         }
 
         async function submitReview() {
@@ -815,6 +985,7 @@
             try {
                 cartItems = await api('/api/cart');
                 updateCartUI();
+                updateCheckoutTotal();
             } catch(e) { console.error(e); }
         }
 
@@ -861,15 +1032,14 @@
             if (!cartItems.length) { showToast('Кошик порожній', true); return; }
             toggleCart();
             document.getElementById('checkoutModal').classList.remove('hidden');
-            // Ініціалізуємо Select2 після відкриття модалки
             setTimeout(() => {
                 initCitySelect();
+                updateCheckoutTotal();
             }, 100);
         }
 
         function closeCheckout() { 
             document.getElementById('checkoutModal').classList.add('hidden');
-            // Очищаємо select2
             $('#checkoutCity').val('').trigger('change');
             $('#checkoutWarehouse').val('').prop('disabled', true);
         }
@@ -881,21 +1051,24 @@
             const email = document.getElementById('checkoutEmail').value.trim();
             const city = $('#checkoutCity option:selected').text();
             const warehouse_address = $('#checkoutWarehouse').val();
-            const payment_method = document.querySelector('input[name="paymentMethod"]:checked').value;
+            const payment_method = selectedPaymentMethod;
             
-            if (!name || !phone || !city || !warehouse_address) { 
+            if (!name || !phone || !city || !warehouse_address || warehouse_address === 'Спочатку оберіть місто') { 
                 showToast('❌ Заповніть всі поля', true); 
                 return; 
             }
             
-            const btn = document.querySelector('#checkoutForm button[type="submit"]');
-            btn.disabled = true; btn.textContent = '⏳ Відправка...';
+            const btn = document.querySelector('#checkoutForm .submit-btn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true; 
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Відправка...';
+            
             try {
                 const data = await api('/api/checkout', { 
                     method: 'POST', 
                     body: JSON.stringify({ name, phone, email, city, warehouse_address, payment_method }) 
                 });
-                showToast(`✅ Замовлення №${data.order_number} створено!`);
+                showToast(`✅ Замовлення №${data.order_number} створено! Дякуємо!`);
                 closeCheckout();
                 await loadCart();
                 renderCart();
@@ -903,7 +1076,10 @@
                 document.getElementById('checkoutPhone').value = '';
                 document.getElementById('checkoutEmail').value = '';
             } catch(e) { showToast('❌ ' + e.message, true); }
-            finally { btn.disabled = false; btn.textContent = '✅ Підтвердити замовлення'; }
+            finally { 
+                btn.disabled = false; 
+                btn.innerHTML = originalText;
+            }
         };
 
         async function showFavorites() {
