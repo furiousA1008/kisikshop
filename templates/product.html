@@ -6,7 +6,7 @@
     <title>KISIK MARKET | Товар</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- Select2 для красивого пошуку міст/відділень -->
+    <!-- Select2 тільки для відділень -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -15,7 +15,6 @@
         body { background: #0a0a0f; color: white; font-family: system-ui, -apple-system, sans-serif; }
         .gradient-text { background: linear-gradient(135deg, #ff6b35, #ffb347); -webkit-background-clip: text; background-clip: text; color: transparent; }
         
-        /* ГАЛЕРЕЯ */
         .gallery-container { position: relative; background: #1a1a2e; border-radius: 24px; overflow: hidden; }
         .main-image { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; transition: transform 0.3s ease; cursor: zoom-in; }
         .main-image:hover { transform: scale(1.02); }
@@ -78,9 +77,9 @@
         }
         .fixed.bottom-6.right-6 { animation: pulse-ring 2s infinite; }
 
-        /* Select2 темна тема */
+        /* Select2 темна тема для відділень */
         .select2-container--default .select2-selection--single {
-            background-color: #0f172a;
+            background-color: #1e293b;
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 14px;
             height: 48px;
@@ -107,11 +106,20 @@
         .select2-container--default .select2-results__option--highlighted[aria-selected] {
             background-color: #ff6b35;
         }
-        .select2-search__field {
-            background-color: #0f172a !important;
-            border: 1px solid rgba(255,107,53,0.2) !important;
-            color: white !important;
-            border-radius: 10px;
+        
+        /* Анімація завантаження для кнопки пошуку міста */
+        .city-loading {
+            position: relative;
+        }
+        .city-loading .loading-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: none;
+        }
+        .city-loading.loading .loading-icon {
+            display: block;
         }
     </style>
 </head>
@@ -185,7 +193,7 @@
         </div>
     </div>
 
-    <!-- Модалка оформлення замовлення (дизайн як в 5, але з інтеграцією API Нової Пошти) -->
+    <!-- Модалка оформлення замовлення (звичайне поле для міста + select2 для відділень) -->
     <div id="checkoutModal" class="fixed hidden inset-0 bg-black/95 z-[1000] flex items-center justify-center backdrop-blur-md">
         <div class="bg-slate-900 rounded-3xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6">
             <div class="flex justify-between items-center mb-4">
@@ -197,23 +205,27 @@
                 <input type="tel" id="checkoutPhone" placeholder="Номер телефону *" required class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 mb-3 text-white">
                 <input type="email" id="checkoutEmail" placeholder="Email (необов'язково)" class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 mb-3 text-white">
                 
-                <!-- Місто з Select2 (API Нова Пошта) -->
+                <!-- Звичайне текстове поле для міста -->
                 <div class="mb-3">
                     <label class="block text-sm font-bold mb-2">Місто *</label>
-                    <select id="checkoutCity" class="city-select" style="width: 100%;">
-                        <option value="">Введіть назву міста...</option>
-                    </select>
+                    <div class="relative city-loading" id="cityInputWrapper">
+                        <input type="text" id="checkoutCity" placeholder="Наприклад: Київ, Львів, Одеса" required class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 text-white pr-10">
+                        <div class="loading-icon">
+                            <i class="fas fa-spinner fa-spin text-orange-500"></i>
+                        </div>
+                    </div>
                 </div>
                 
-                <!-- Відділення з Select2 (завантажується після вибору міста) -->
+                <!-- Відділення (Select2) -->
                 <div class="mb-4">
                     <label class="block text-sm font-bold mb-2">Відділення Нової Пошти *</label>
                     <select id="checkoutWarehouse" class="warehouse-select" style="width: 100%;" disabled>
-                        <option value="">Спочатку оберіть місто</option>
+                        <option value="">Спочатку введіть місто</option>
                     </select>
+                    <p class="text-xs text-gray-500 mt-1">Відділення завантажаться після введення міста</p>
                 </div>
                 
-                <!-- Спосіб оплати (перенесено після вибору відділення) -->
+                <!-- Спосіб оплати -->
                 <div class="mb-4">
                     <label class="block text-sm font-bold mb-2">Спосіб оплати *</label>
                     <div class="space-y-2">
@@ -292,13 +304,16 @@
         let reviews = [];
         let isFavorite = false;
         let userRating = 0;
+        let citySearchTimeout = null;
+        let currentCityRef = null;
 
         const productId = {{ product_id }};
         const NOVA_POSHTA_API_KEY = "d00481d682b0f3e592170022f9b8b6b4";
         const NOVA_POSHTA_API_URL = "https://api.novaposhta.ua/v2.0/json/";
 
-        // API НОВОЇ ПОШТИ
-        async function searchCities(searchText) {
+        // Пошук міста через API (повертає ref та назву)
+        async function searchCityByText(cityName) {
+            if (!cityName || cityName.length < 2) return null;
             try {
                 const response = await fetch(NOVA_POSHTA_API_URL, {
                     method: 'POST',
@@ -307,19 +322,19 @@
                         apiKey: NOVA_POSHTA_API_KEY,
                         modelName: "Address",
                         calledMethod: "searchSettlements",
-                        methodProperties: { CityName: searchText, Limit: 50 }
+                        methodProperties: { CityName: cityName, Limit: 1 }
                     })
                 });
                 const data = await response.json();
-                if (data.success && data.data && data.data[0] && data.data[0].Addresses) {
-                    return data.data[0].Addresses.map(city => ({
-                        id: city.DeliveryCity,
-                        name: city.Present,
-                        ref: city.DeliveryCity
-                    }));
+                if (data.success && data.data && data.data[0] && data.data[0].Addresses && data.data[0].Addresses.length > 0) {
+                    const city = data.data[0].Addresses[0];
+                    return { ref: city.DeliveryCity, name: city.Present };
                 }
-                return [];
-            } catch(e) { console.error(e); return []; }
+                return null;
+            } catch(e) {
+                console.error('Search city error:', e);
+                return null;
+            }
         }
 
         async function getWarehouses(cityRef) {
@@ -343,7 +358,10 @@
                     }));
                 }
                 return [];
-            } catch(e) { console.error(e); return []; }
+            } catch(e) {
+                console.error('Error loading warehouses:', e);
+                return [];
+            }
         }
 
         async function api(url, options = {}) {
@@ -509,32 +527,54 @@
         async function updateQty(id, qty) { if (qty <= 0) { await removeItem(id); return; } await api('/api/cart/update', { method: 'POST', body: JSON.stringify({ cart_item_id: id, quantity: qty }) }); await loadCart(); renderCart(); }
         async function removeItem(id) { await api(`/api/cart/${id}`, { method: 'DELETE' }); await loadCart(); renderCart(); }
 
-        function openCheckout() { if (!cartItems.length) { showToast('Кошик порожній', true); return; } toggleCart(); document.getElementById('checkoutModal').classList.remove('hidden'); setTimeout(() => initCitySelect(), 100); }
-        function closeCheckout() { document.getElementById('checkoutModal').classList.add('hidden'); $('#checkoutCity').val('').trigger('change'); $('#checkoutWarehouse').val('').prop('disabled', true); }
+        function openCheckout() { if (!cartItems.length) { showToast('Кошик порожній', true); return; } toggleCart(); document.getElementById('checkoutModal').classList.remove('hidden'); initWarehouseSelect(); }
+        function closeCheckout() { document.getElementById('checkoutModal').classList.add('hidden'); $('#checkoutWarehouse').val('').prop('disabled', true); $('#checkoutWarehouse').html('<option value="">Спочатку введіть місто</option>'); document.getElementById('checkoutCity').value = ''; currentCityRef = null; }
 
-        function initCitySelect() {
-            $('#checkoutCity').select2({
-                placeholder: "Введіть назву міста...",
+        function initWarehouseSelect() {
+            $('#checkoutWarehouse').select2({
+                placeholder: "Оберіть відділення",
                 dropdownParent: $('#checkoutModal'),
-                ajax: {
-                    delay: 300,
-                    transport: async function(params, success, failure) {
-                        const searchText = params.data.term || '';
-                        if (searchText.length < 2) { success({ results: [] }); return; }
-                        const cities = await searchCities(searchText);
-                        success({ results: cities.map(c => ({ id: c.ref, text: c.name })) });
-                    }
+                width: '100%'
+            });
+            
+            const cityInput = document.getElementById('checkoutCity');
+            const wrapper = document.getElementById('cityInputWrapper');
+            
+            cityInput.addEventListener('input', function() {
+                if (citySearchTimeout) clearTimeout(citySearchTimeout);
+                const cityName = this.value.trim();
+                
+                if (cityName.length < 2) {
+                    $('#checkoutWarehouse').prop('disabled', true).html('<option value="">Спочатку введіть місто</option>');
+                    currentCityRef = null;
+                    return;
                 }
-            }).on('change', async function(e) {
-                const cityRef = e.target.value;
-                const warehouseSelect = $('#checkoutWarehouse');
-                warehouseSelect.prop('disabled', true).html('<option value="">Завантаження відділень...</option>');
-                if (cityRef) {
-                    const warehouses = await getWarehouses(cityRef);
-                    warehouseSelect.prop('disabled', false);
-                    if (!warehouses.length) warehouseSelect.html('<option value="">Немає відділень у цьому місті</option>');
-                    else warehouseSelect.html('<option value="">Оберіть відділення</option>' + warehouses.map(w => `<option value="${w.name}">${w.name}</option>`).join(''));
-                } else { warehouseSelect.html('<option value="">Спочатку оберіть місто</option>'); }
+                
+                wrapper.classList.add('loading');
+                
+                citySearchTimeout = setTimeout(async () => {
+                    const cityData = await searchCityByText(cityName);
+                    wrapper.classList.remove('loading');
+                    
+                    if (cityData) {
+                        currentCityRef = cityData.ref;
+                        const warehouses = await getWarehouses(currentCityRef);
+                        const warehouseSelect = $('#checkoutWarehouse');
+                        
+                        if (warehouses.length === 0) {
+                            warehouseSelect.prop('disabled', true).html('<option value="">Немає відділень у цьому місті</option>');
+                            showToast('❌ У цьому місті не знайдено відділень Нової Пошти', true);
+                        } else {
+                            warehouseSelect.prop('disabled', false);
+                            warehouseSelect.html('<option value="">Оберіть відділення</option>' + warehouses.map(w => `<option value="${w.name}">${w.name}</option>`).join(''));
+                            showToast(`✅ Знайдено ${warehouses.length} відділень у місті ${cityData.name}`);
+                        }
+                    } else if (cityName.length >= 2) {
+                        currentCityRef = null;
+                        $('#checkoutWarehouse').prop('disabled', true).html('<option value="">Місто не знайдено, спробуйте ще раз</option>');
+                        showToast('❌ Місто не знайдено, перевірте назву', true);
+                    }
+                }, 800);
             });
         }
 
@@ -543,20 +583,31 @@
             const name = document.getElementById('checkoutName').value.trim();
             const phone = document.getElementById('checkoutPhone').value.trim();
             const email = document.getElementById('checkoutEmail').value.trim();
-            const city = $('#checkoutCity option:selected').text();
+            const city = document.getElementById('checkoutCity').value.trim();
             const warehouse_address = $('#checkoutWarehouse').val();
             const payment_method = document.querySelector('input[name="paymentMethod"]:checked').value;
-            if (!name || !phone || !city || !warehouse_address || warehouse_address === 'Спочатку оберіть місто') { showToast('❌ Заповніть всі поля', true); return; }
+            
+            if (!name || !phone || !city || !warehouse_address || warehouse_address === 'Спочатку введіть місто' || warehouse_address === 'Місто не знайдено, спробуйте ще раз') { 
+                showToast('❌ Заповніть всі поля коректно', true); 
+                return; 
+            }
+            
+            if (!currentCityRef && city.length >= 2) {
+                showToast('❌ Будь ласка, зачекайте поки місто перевіриться', true);
+                return;
+            }
+            
             const btn = document.querySelector('#checkoutForm button[type="submit"]');
             btn.disabled = true; btn.textContent = '⏳ Відправка...';
             try {
                 const data = await api('/api/checkout', { method: 'POST', body: JSON.stringify({ name, phone, email, city, warehouse_address, payment_method }) });
-                showToast(`✅ Замовлення №${data.order_number} створено!`);
+                showToast(`✅ Замовлення №${data.order_number} створено! Дякуємо!`);
                 closeCheckout();
                 await loadCart(); renderCart();
                 document.getElementById('checkoutName').value = '';
                 document.getElementById('checkoutPhone').value = '';
                 document.getElementById('checkoutEmail').value = '';
+                document.getElementById('checkoutCity').value = '';
             } catch(e) { showToast('❌ ' + e.message, true); }
             finally { btn.disabled = false; btn.textContent = '✅ Підтвердити замовлення'; }
         };
