@@ -6,7 +6,7 @@
     <title>KISIK MARKET | Товар</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- Select2 тільки для відділень -->
+    <!-- Select2 для відділень (без пошуку) -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -77,7 +77,7 @@
         }
         .fixed.bottom-6.right-6 { animation: pulse-ring 2s infinite; }
 
-        /* Select2 темна тема для відділень */
+        /* Select2 темна тема для відділень - БЕЗ поля пошуку */
         .select2-container--default .select2-selection--single {
             background-color: #1e293b;
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -105,6 +105,14 @@
         }
         .select2-container--default .select2-results__option--highlighted[aria-selected] {
             background-color: #ff6b35;
+        }
+        /* Приховуємо поле пошуку Select2 */
+        .select2-search--dropdown {
+            display: none !important;
+        }
+        /* Забираємо відступи, щоб список був без пошуку */
+        .select2-results__options {
+            max-height: 300px !important;
         }
 
         /* Стилі для випадаючого списку підказок міст */
@@ -255,7 +263,7 @@
                     </div>
                 </div>
                 
-                <!-- Відділення (Select2) -->
+                <!-- Відділення (Select2 без пошуку) -->
                 <div class="mb-4">
                     <label class="block text-sm font-bold mb-2">Відділення Нової Пошти *</label>
                     <select id="checkoutWarehouse" class="warehouse-select" style="width: 100%;" disabled>
@@ -268,7 +276,7 @@
                     <label class="block text-sm font-bold mb-2">Спосіб оплати *</label>
                     <div class="space-y-2">
                         <label class="flex items-center gap-3 p-3 bg-slate-800 rounded-xl cursor-pointer hover:bg-slate-700">
-                            <input type="radio" name="paymentMethod" value="post" class="w-4 h-4 text-orange-500">
+                            <input type="radio" name="paymentMethod" value="post" class="w-4 h-4 text-orange-500" checked>
                             <span><i class="fas fa-truck text-blue-400"></i> Оплата на пошті</span>
                         </label>
                     </div>
@@ -635,7 +643,8 @@
             $('#checkoutWarehouse').select2({
                 placeholder: "Оберіть відділення",
                 dropdownParent: $('#checkoutModal'),
-                width: '100%'
+                width: '100%',
+                minimumResultsForSearch: Infinity  // Важливо: прибирає поле пошуку
             });
         }
 
