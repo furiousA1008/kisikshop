@@ -1,793 +1,1098 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>KISIK MARKET | Без передплати</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0a0a0f; color: white; font-family: system-ui, -apple-system, sans-serif; }
-        .gradient-text { background: linear-gradient(135deg, #ff6b35, #ffb347); -webkit-background-clip: text; background-clip: text; color: transparent; }
-        .product-card { background: #14141c; border-radius: 24px; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; border: 1px solid rgba(255,107,53,0.2); cursor: pointer; position: relative; }
-        .product-card:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(255,107,53,0.2); border-color: #ff6b35; }
-        .category-btn { padding: 10px 24px; border-radius: 40px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: all 0.2s; font-weight: 600; font-size: 14px; white-space: nowrap; }
-        .category-btn.active, .category-btn:hover { background: #ff6b35; border-color: #ff6b35; }
-        .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); z-index: 1000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
-        .cart-badge { position: absolute; top: -5px; right: -5px; background: #ff6b35; color: white; font-size: 10px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #ff6b35; padding: 12px 24px; border-radius: 40px; z-index: 1100; animation: fadeInUp 0.3s ease; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
-        input, select, textarea { outline: none; }
-        input:focus, select:focus, textarea:focus { border-color: #ff6b35 !important; }
-        .skeleton { background: linear-gradient(90deg, #1a1a24 25%, #2a2a35 50%, #1a1a24 75%); background-size: 200% 100%; animation: skeleton 1.5s infinite; border-radius: 20px; height: 320px; }
-        @keyframes skeleton { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-        .order-status-new { background: rgba(59,130,246,0.2); color: #3b82f6; }
-        .order-status-completed { background: rgba(16,185,129,0.2); color: #10b981; }
-        .loading-spinner { border: 3px solid rgba(255,107,53,0.3); border-top: 3px solid #ff6b35; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>KISIK MARKET | Без передплати</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    /* ---------- ГЛОБАЛЬНІ СТИЛІ ---------- */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-        .favorite-icon { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.5); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; transition: all 0.2s; backdrop-filter: blur(4px); }
-        .favorite-icon:hover { transform: scale(1.1); background: rgba(0,0,0,0.7); }
-        .favorite-icon i { font-size: 18px; }
-        .favorite-icon i.fa-heart { color: #ef4444; }
+    body {
+      background: #0a0a0f;
+      color: white;
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    }
 
-        .star-rating-small { display: inline-flex; gap: 2px; }
-        .star-rating-small i { font-size: 12px; color: #ffb347; }
-        
-        .search-result-item { transition: all 0.2s; }
-        .search-result-item:hover { background: rgba(255,107,53,0.1); }
-        
-        /* Адаптивний хедер для мобільних */
-        @media (max-width: 768px) {
-            .header-container { padding: 12px 16px; }
-            .logo h1 { font-size: 1.2rem; }
-            .logo p { font-size: 8px; }
-            .logo-icon { font-size: 28px; }
-            .header-buttons { gap: 8px; }
-            .auth-btn { padding: 6px 12px; font-size: 12px; }
-            .cart-btn { padding: 8px; }
-            .user-menu-btn { padding: 6px 10px; }
-            .user-menu-btn span { display: none; }
-            .category-btn { padding: 6px 16px; font-size: 12px; white-space: nowrap; }
-            .categories-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
-        }
-        
-        @media (max-width: 480px) {
-            .logo h1 { font-size: 1rem; }
-            .logo-icon { font-size: 24px; }
-            .header-buttons { gap: 6px; }
-            .auth-btn { padding: 5px 10px; font-size: 11px; }
-        }
-        
-        /* Стилі для кнопок в хедері */
-        .header-buttons { display: flex; align-items: center; gap: 12px; }
-        .cart-btn { position: relative; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 50%; transition: all 0.2s; display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; }
-        .cart-btn:hover { background: rgba(255,255,255,0.2); }
-        .auth-btn { border-radius: 9999px; transition: all 0.2s; font-weight: 500; }
-        .user-menu-btn { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.1); border-radius: 9999px; transition: all 0.2s; }
-        
-        /* Контейнер для категорій з горизонтальним скролом на мобільних */
-        .categories-wrapper { width: 100%; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
-        .categories-container { display: flex; gap: 12px; padding-bottom: 4px; min-width: min-content; }
-        @keyframes pulse-ring {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255,107,53,0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255,107,53,0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255,107,53,0); }
-        }
-        .fixed.bottom-6.right-6 {
-            animation: pulse-ring 2s infinite;
-        }
-        @media (max-width: 640px) {
-            .fixed.bottom-6.right-6 {
-                bottom: 16px;
-                right: 16px;
-                padding: 12px;
-            }
-            .fixed.bottom-6.right-6 i {
-                font-size: 20px;
-            }
-        }
-    </style>
+    .gradient-text {
+      background: linear-gradient(135deg, #ff6b35, #ffb347);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    /* ---------- КАРТКА ТОВАРУ (ПРЕМІУМ ДИЗАЙН) ---------- */
+    .product-card {
+      background: linear-gradient(145deg, #14141c 0%, #0f0f17 100%);
+      border-radius: 28px;
+      overflow: hidden;
+      transition: all 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+      border: 1px solid rgba(255, 107, 53, 0.15);
+      position: relative;
+      cursor: pointer;
+      backdrop-filter: blur(2px);
+    }
+
+    .product-card:hover {
+      transform: translateY(-6px) scale(1.02);
+      box-shadow: 0 20px 35px -12px rgba(255, 107, 53, 0.3);
+      border-color: rgba(255, 107, 53, 0.5);
+    }
+
+    .product-image-wrapper {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, #1a1a2a, #0e0e18);
+    }
+
+    .product-image {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+
+    .product-card:hover .product-image {
+      transform: scale(1.05);
+    }
+
+    /* Бейдж категорії */
+    .product-badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      padding: 6px 12px;
+      border-radius: 30px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: #ffb347;
+      border-left: 2px solid #ff6b35;
+      z-index: 2;
+    }
+
+    /* Іконка обраного */
+    .favorite-icon {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(8px);
+      border-radius: 50%;
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 10;
+      transition: all 0.25s ease;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .favorite-icon:hover {
+      transform: scale(1.15);
+      background: rgba(0, 0, 0, 0.8);
+    }
+
+    .favorite-icon i.fa-heart {
+      color: #ff4466;
+      text-shadow: 0 0 5px rgba(255, 68, 102, 0.5);
+    }
+
+    /* Інформація товару */
+    .product-info {
+      padding: 16px 14px 18px;
+    }
+
+    .product-title {
+      font-weight: 800;
+      font-size: 1rem;
+      line-height: 1.3;
+      margin-bottom: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      letter-spacing: -0.2px;
+    }
+
+    .rating-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 8px 0;
+    }
+
+    .stars {
+      display: flex;
+      gap: 2px;
+    }
+
+    .stars i {
+      font-size: 11px;
+      color: #ffb347;
+    }
+
+    .price-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-top: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .current-price {
+      font-size: 1.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #ff6b35, #ffb347);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    /* Пігулки розмірів */
+    .sizes-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .size-pill {
+      background: rgba(255, 255, 255, 0.07);
+      border-radius: 30px;
+      padding: 4px 10px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      color: #ccc;
+      transition: all 0.2s;
+    }
+
+    /* ---------- АНІМАЦІЇ ---------- */
+    @keyframes pulse-ring {
+      0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(255, 107, 53, 0.7);
+      }
+      70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 12px rgba(255, 107, 53, 0);
+      }
+      100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(255, 107, 53, 0);
+      }
+    }
+
+    .telegram-btn {
+      animation: pulse-ring 2s infinite;
+    }
+
+    /* Скелетон завантаження */
+    .skeleton-card {
+      background: linear-gradient(145deg, #15151f, #0c0c14);
+      border-radius: 28px;
+      overflow: hidden;
+    }
+
+    .skeleton-img {
+      background: linear-gradient(90deg, #1e1e2c 25%, #2a2a38 50%, #1e1e2c 75%);
+      background-size: 200% 100%;
+      animation: skeleton 1.5s infinite;
+      aspect-ratio: 1/1;
+    }
+
+    .skeleton-text {
+      height: 12px;
+      background: linear-gradient(90deg, #1e1e2c 25%, #2a2a38 50%, #1e1e2c 75%);
+      background-size: 200% 100%;
+      animation: skeleton 1.5s infinite;
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+
+    @keyframes skeleton {
+      0% {
+        background-position: 200% 0;
+      }
+      100% {
+        background-position: -200% 0;
+      }
+    }
+
+    /* Категорії (горизонтальний скрол) */
+    .categories-scroll-x {
+      overflow-x: auto;
+      scrollbar-width: thin;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .category-btn {
+      padding: 10px 22px;
+      border-radius: 100px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-weight: 600;
+      font-size: 0.85rem;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      color: #aaa;
+    }
+
+    .category-btn.active {
+      background: linear-gradient(135deg, #ff6b35, #ffb347);
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+    }
+
+    /* Стильний пошук */
+    .search-wrapper {
+      background: rgba(20, 20, 28, 0.8);
+      backdrop-filter: blur(12px);
+      border-radius: 60px;
+      border: 1px solid rgba(255, 107, 53, 0.2);
+      transition: all 0.2s;
+    }
+
+    .search-wrapper:focus-within {
+      border-color: #ff6b35;
+      box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2);
+    }
+
+    /* Модальні вікна */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.96);
+      backdrop-filter: blur(12px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Toast сповіщення */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ff6b35;
+      padding: 12px 24px;
+      border-radius: 40px;
+      z-index: 1100;
+      animation: fadeInUp 0.3s ease;
+      font-weight: 500;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+
+    /* Бейдж кошика */
+    .cart-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #ff6b35;
+      font-size: 10px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    /* Адаптив для мобільних */
+    @media (max-width: 480px) {
+      .product-info {
+        padding: 12px;
+      }
+
+      .product-title {
+        font-size: 0.9rem;
+      }
+
+      .current-price {
+        font-size: 1.2rem;
+      }
+
+      .size-pill {
+        padding: 3px 8px;
+        font-size: 9px;
+      }
+
+      .category-btn {
+        padding: 8px 18px;
+        font-size: 0.75rem;
+      }
+    }
+  </style>
 </head>
 <body>
-    <header class="sticky top-0 z-50 bg-black/60 backdrop-blur-xl border-b border-white/10">
-        <div class="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4 header-container">
-            <div class="flex justify-between items-center">
-                <a href="/" class="flex items-center gap-2 sm:gap-3 logo flex-shrink-0">
-                    <div class="logo-icon text-3xl sm:text-4xl">🐱</div>
-                    <div>
-                        <h1 class="text-xl sm:text-2xl font-black"><span class="gradient-text">KISIK</span> MARKET</h1>
-                        <p class="text-[8px] sm:text-[10px] font-bold text-orange-400">✨ Працюємо без передплати ✨</p>
-                    </div>
-                </a>
 
-                <div class="header-buttons">
-                    <button onclick="toggleCart()" class="cart-btn relative">
-                        <i class="fas fa-shopping-cart text-base sm:text-lg"></i>
-                        <span id="cartCount" class="cart-badge hidden">0</span>
-                    </button>
+  <!-- ================= HEADER ================= -->
+  <header class="sticky top-0 z-50 bg-black/70 backdrop-blur-xl border-b border-white/10">
+    <div class="max-w-7xl mx-auto px-4 py-3">
+      <div class="flex justify-between items-center">
+        <!-- Логотип -->
+        <a href="/" class="flex items-center gap-2">
+          <div class="text-3xl">🐱</div>
+          <div>
+            <h1 class="text-xl font-black">
+              <span class="gradient-text">KISIK</span> MARKET
+            </h1>
+            <p class="text-[8px] font-bold text-orange-400">✨ Працюємо без передплати ✨</p>
+          </div>
+        </a>
 
-                    <a href="/admin" id="adminPanelBtn" class="hidden bg-purple-600/20 hover:bg-purple-600/30 px-2 sm:px-3 py-2 rounded-full transition text-sm">
-                        <i class="fas fa-crown"></i> <span class="hidden sm:inline">Admin</span>
-                    </a>
+        <!-- Права частина: кошик, адмін, авторизація -->
+        <div class="flex items-center gap-2">
+          <button onclick="toggleCart()" class="relative bg-white/10 p-2 rounded-full hover:bg-white/20 transition">
+            <i class="fas fa-shopping-cart text-base"></i>
+            <span id="cartCount" class="cart-badge hidden">0</span>
+          </button>
 
-                    <div id="authButtons" class="flex gap-1 sm:gap-2">
-                        <button onclick="openAuth('login')" class="auth-btn px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/10 text-xs sm:text-sm hover:bg-white/20 transition whitespace-nowrap">Вхід</button>
-                        <button onclick="openAuth('register')" class="auth-btn px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-orange-500 text-xs sm:text-sm hover:bg-orange-600 transition whitespace-nowrap">Реєстрація</button>
-                    </div>
+          <a href="/admin" id="adminPanelBtn" class="hidden bg-purple-600/20 px-2 py-2 rounded-full text-sm">
+            <i class="fas fa-crown"></i>
+          </a>
 
-                    <div id="userMenu" class="hidden relative">
-                        <button onclick="toggleUserMenu()" class="user-menu-btn px-2 sm:px-3 py-1.5 sm:py-2 rounded-full">
-                            <i class="fas fa-user"></i>
-                            <span id="userName" class="text-sm hidden sm:inline max-w-[80px] truncate"></span>
-                            <i class="fas fa-chevron-down text-xs"></i>
-                        </button>
-                        <div id="userDropdown" class="hidden absolute right-0 mt-2 bg-slate-800 rounded-xl shadow-xl w-48 z-50">
-                            <button onclick="showOrders()" class="w-full text-left px-4 py-2 text-sm hover:bg-white/10">📦 Мої замовлення</button>
-                            <button onclick="showFavorites()" class="w-full text-left px-4 py-2 text-sm hover:bg-white/10">❤️ Обране</button>
-                            <hr class="border-white/10">
-                            <button onclick="logout()" class="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-white/10">🚪 Вийти</button>
-                        </div>
-                    </div>
-                </div>
+          <div id="authButtons" class="flex gap-1">
+            <button onclick="openAuth('login')" class="px-3 py-1.5 rounded-full bg-white/10 text-xs font-medium">Вхід</button>
+            <button onclick="openAuth('register')" class="px-3 py-1.5 rounded-full bg-orange-500 text-xs font-medium">Реєстрація</button>
+          </div>
+
+          <div id="userMenu" class="hidden relative">
+            <button onclick="toggleUserMenu()" class="flex items-center gap-1 bg-white/10 px-2 py-1.5 rounded-full">
+              <i class="fas fa-user text-xs"></i>
+              <span id="userName" class="text-xs max-w-[70px] truncate hidden sm:inline"></span>
+              <i class="fas fa-chevron-down text-[10px]"></i>
+            </button>
+            <div id="userDropdown" class="hidden absolute right-0 mt-2 bg-slate-800 rounded-xl shadow-xl w-44 z-50">
+              <button onclick="showOrders()" class="w-full text-left px-3 py-2 text-xs hover:bg-white/10">📦 Мої замовлення</button>
+              <button onclick="showFavorites()" class="w-full text-left px-3 py-2 text-xs hover:bg-white/10">❤️ Обране</button>
+              <hr class="border-white/10">
+              <button onclick="logout()" class="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-white/10">🚪 Вийти</button>
             </div>
+          </div>
         </div>
-    </header>
+      </div>
+    </div>
+  </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-8">
-        <div class="text-center mb-12">
-            <div class="text-8xl mb-4 animate-bounce">🐱</div>
-            <h2 class="text-4xl md:text-6xl font-black gradient-text mb-2">KISIK MARKET</h2>
-            <p class="text-xl text-orange-400 font-bold">✨ Працюємо без передплати ✨</p>
-            <p class="text-gray-400 mt-2 max-w-2xl mx-auto">Брендовий одяг. Доставка Новою Поштою по всій Україні</p>
-        </div>
-
-        <!-- Блок пошуку -->
-        <div class="max-w-2xl mx-auto mb-8 relative">
-            <div class="relative">
-                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                <input type="text" 
-                       id="searchInput" 
-                       placeholder="🔍 Пошук товарів..." 
-                       class="w-full bg-slate-800 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition outline-none">
-                <button id="searchClearBtn" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white hidden">
-                    <i class="fas fa-times-circle"></i>
-                </button>
-            </div>
-            
-            <!-- Результати пошуку (автопідстановка) -->
-            <div id="searchResults" class="absolute top-full left-0 right-0 mt-2 bg-slate-800 rounded-2xl border border-white/10 shadow-2xl z-50 hidden max-h-96 overflow-y-auto">
-                <div id="searchResultsList"></div>
-            </div>
-        </div>
-
-        <!-- Категорії з горизонтальним скролом -->
-        <div class="categories-wrapper mb-12">
-            <div id="categoriesContainer" class="categories-container justify-start md:justify-center">
-                <div class="loading-spinner"></div>
-            </div>
-        </div>
-
-        <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            <div class="skeleton"></div>
-            <div class="skeleton"></div>
-            <div class="skeleton"></div>
-            <div class="skeleton"></div>
-        </div>
-    </main>
-
-    <!-- Модалка кошика -->
-    <div id="cartModal" class="modal hidden">
-        <div class="bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-4 sm:p-6 mx-4">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl sm:text-2xl font-black"><i class="fas fa-shopping-cart text-orange-500"></i> Кошик</h2>
-                <button onclick="toggleCart()" class="text-gray-400 text-2xl hover:text-white">&times;</button>
-            </div>
-            <div id="cartItems"></div>
-            <div id="cartEmpty" class="text-center py-10 text-gray-400 hidden">🛒 Кошик порожній</div>
-            <div id="cartSummary" class="border-t border-white/10 pt-4 hidden">
-                <div class="flex justify-between text-xl font-bold mb-4">
-                    <span>До сплати:</span>
-                    <span id="cartTotal" class="text-orange-500">0 грн</span>
-                </div>
-                <button onclick="openCheckout()" class="w-full bg-orange-500 py-3 rounded-xl font-bold hover:bg-orange-600 transition">Оформити замовлення</button>
-            </div>
-        </div>
+  <!-- ================= ОСНОВНИЙ КОНТЕНТ ================= -->
+  <main class="max-w-7xl mx-auto px-4 py-6 pb-24">
+    <!-- Hero -->
+    <div class="text-center mb-8">
+      <div class="text-6xl mb-2 animate-bounce">🐱</div>
+      <h2 class="text-3xl font-black gradient-text">KISIK MARKET</h2>
+      <p class="text-orange-400 font-semibold text-sm">✨ Працюємо без передплати ✨</p>
+      <p class="text-gray-400 text-xs mt-1">Брендовий одяг · Доставка по всій Україні</p>
     </div>
 
-    <!-- Модалка оформлення замовлення -->
-    <div id="checkoutModal" class="modal hidden">
-        <div class="bg-slate-900 rounded-3xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-4 sm:p-6 mx-4">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl sm:text-2xl font-black">Оформлення замовлення</h2>
-                <button onclick="closeCheckout()" class="text-gray-400 text-2xl hover:text-white">&times;</button>
-            </div>
-            <form id="checkoutForm">
-                <input type="text" id="checkoutName" placeholder="ПІБ *" required class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 mb-3 text-white">
-                <input type="tel" id="checkoutPhone" placeholder="Номер телефону *" required class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 mb-3 text-white">
-                <input type="email" id="checkoutEmail" placeholder="Email (необов'язково)" class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 mb-3 text-white">
-                <input type="text" id="checkoutCity" placeholder="Місто *" required class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 mb-3 text-white">
-
-                <div class="mb-4">
-                    <label class="block text-sm font-bold mb-2">Спосіб оплати *</label>
-                    <div class="space-y-2">
-                        <label class="flex items-center gap-3 p-3 bg-slate-800 rounded-xl cursor-pointer hover:bg-slate-700">
-                            <input type="radio" name="paymentMethod" value="full" checked class="w-4 h-4 text-orange-500">
-                            <span><i class="fas fa-credit-card text-green-400"></i> Повна оплата (онлайн)</span>
-                        </label>
-                        <label class="flex items-center gap-3 p-3 bg-slate-800 rounded-xl cursor-pointer hover:bg-slate-700">
-                            <input type="radio" name="paymentMethod" value="partial" class="w-4 h-4 text-orange-500">
-                            <span><i class="fas fa-percent text-yellow-400"></i> Часткова оплата (30% передплата)</span>
-                        </label>
-                        <label class="flex items-center gap-3 p-3 bg-slate-800 rounded-xl cursor-pointer hover:bg-slate-700">
-                            <input type="radio" name="paymentMethod" value="post" class="w-4 h-4 text-orange-500">
-                            <span><i class="fas fa-truck text-blue-400"></i> Оплата на пошті</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="mb-4">
-                    <label class="block text-sm font-bold mb-2">Адреса відділення Нової Пошти *</label>
-                    <textarea id="checkoutAddress" rows="3" placeholder="Наприклад: м. Київ, вул. Хрещатик, 22, Нова Пошта №5" required class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 text-white resize-none"></textarea>
-                    <p class="text-xs text-gray-400 mt-1">Вкажіть місто, вулицю, номер відділення або поштомату</p>
-                </div>
-
-                <button type="submit" class="w-full bg-orange-500 py-3 rounded-xl font-bold hover:bg-orange-600 transition">✅ Підтвердити замовлення</button>
-            </form>
-        </div>
+    <!-- Пошук -->
+    <div class="max-w-md mx-auto mb-7 relative">
+      <div class="search-wrapper flex items-center bg-slate-800/50 rounded-full pl-5 pr-2 py-1">
+        <i class="fas fa-search text-gray-400 text-sm"></i>
+        <input type="text" id="searchInput" placeholder="Пошук товарів..." class="w-full bg-transparent py-3 px-3 text-white text-sm outline-none">
+        <button id="searchClearBtn" class="text-gray-400 hover:text-white hidden w-7 h-7 rounded-full items-center justify-center">
+          <i class="fas fa-times-circle text-sm"></i>
+        </button>
+      </div>
+      <div id="searchResults" class="absolute top-full left-0 right-0 mt-2 bg-slate-800 rounded-2xl border border-white/10 shadow-2xl z-50 hidden max-h-80 overflow-y-auto"></div>
     </div>
 
-    <!-- Модалка авторизації -->
-    <div id="authModal" class="modal hidden">
-        <div class="bg-slate-900 rounded-3xl max-w-md w-full p-6 sm:p-8 mx-4">
-            <div class="flex justify-between items-center mb-6">
-                <h3 id="authTitle" class="text-xl sm:text-2xl font-black">Вхід</h3>
-                <button onclick="closeAuth()" class="text-gray-400 text-2xl hover:text-white">&times;</button>
-            </div>
-            <form id="authForm">
-                <input type="hidden" id="authMode" value="login">
-                <input type="text" id="authUsername" placeholder="Логін" required class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 mb-4 text-white focus:border-orange-500">
-                <input type="password" id="authPassword" placeholder="Пароль" required class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 mb-4 text-white focus:border-orange-500">
-                <button type="submit" class="w-full bg-orange-500 py-3 rounded-xl font-bold hover:bg-orange-600 transition">Увійти</button>
-                <p class="text-center text-sm text-gray-400 mt-4">
-                    <span id="authSwitchText">Немає акаунту?</span>
-                    <button type="button" onclick="switchAuthMode()" class="text-orange-500 ml-1">Зареєструватись</button>
-                </p>
-            </form>
-        </div>
+    <!-- Категорії (горизонтальний скрол) -->
+    <div class="categories-scroll-x mb-8 pb-1">
+      <div id="categoriesContainer" class="flex gap-2 min-w-max px-1">
+        <div class="loading-spinner w-6 h-6 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin mx-auto"></div>
+      </div>
     </div>
 
-    <!-- Модалка замовлень користувача -->
-    <div id="ordersModal" class="modal hidden">
-        <div class="bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-4 sm:p-6 mx-4">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl sm:text-2xl font-black">📦 Мої замовлення</h2>
-                <button onclick="closeOrders()" class="text-gray-400 text-2xl hover:text-white">&times;</button>
-            </div>
-            <div id="ordersList"></div>
+    <!-- Сітка товарів (2 колонки на мобільному) -->
+    <div id="productsGrid" class="grid grid-cols-2 gap-4">
+      <!-- Скелетони завантаження -->
+      <div class="skeleton-card">
+        <div class="skeleton-img"></div>
+        <div class="p-3">
+          <div class="skeleton-text w-3/4"></div>
+          <div class="skeleton-text w-1/2 mt-2"></div>
         </div>
+      </div>
+      <div class="skeleton-card">
+        <div class="skeleton-img"></div>
+        <div class="p-3">
+          <div class="skeleton-text w-3/4"></div>
+          <div class="skeleton-text w-1/2 mt-2"></div>
+        </div>
+      </div>
+      <div class="skeleton-card">
+        <div class="skeleton-img"></div>
+        <div class="p-3">
+          <div class="skeleton-text w-3/4"></div>
+          <div class="skeleton-text w-1/2 mt-2"></div>
+        </div>
+      </div>
+      <div class="skeleton-card">
+        <div class="skeleton-img"></div>
+        <div class="p-3">
+          <div class="skeleton-text w-3/4"></div>
+          <div class="skeleton-text w-1/2 mt-2"></div>
+        </div>
+      </div>
     </div>
+  </main>
 
-    <!-- Модалка обраного -->
-    <div id="favoritesModal" class="modal hidden">
-        <div class="bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-4 sm:p-6 mx-4">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl sm:text-2xl font-black"><i class="fas fa-heart text-red-500"></i> Обрані товари</h2>
-                <button onclick="closeFavorites()" class="text-gray-400 text-2xl hover:text-white">&times;</button>
-            </div>
-            <div id="favoritesList"></div>
+  <!-- ================= МОДАЛЬНІ ВІКНА ================= -->
+
+  <!-- Кошик -->
+  <div id="cartModal" class="modal hidden">
+    <div class="bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-5 mx-4">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-black"><i class="fas fa-shopping-cart text-orange-500"></i> Кошик</h2>
+        <button onclick="toggleCart()" class="text-gray-400 text-2xl">&times;</button>
+      </div>
+      <div id="cartItems"></div>
+      <div id="cartEmpty" class="text-center py-10 text-gray-400 hidden">🛒 Кошик порожній</div>
+      <div id="cartSummary" class="border-t border-white/10 pt-4 hidden">
+        <div class="flex justify-between text-xl font-bold mb-4">
+          <span>До сплати:</span>
+          <span id="cartTotal" class="text-orange-500">0 грн</span>
         </div>
+        <button onclick="openCheckout()" class="w-full bg-orange-500 py-3 rounded-xl font-bold">Оформити замовлення</button>
+      </div>
     </div>
-        <!-- Кнопка зв'язку з менеджером (Telegram) -->
-    <a href="https://t.me/ArtSeXm" 
-       target="_blank" 
-       class="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-full p-4 shadow-2xl transition-all duration-300 hover:scale-110 group flex items-center justify-center"
-       style="box-shadow: 0 4px 15px rgba(255,107,53,0.4);">
-        <div class="relative">
-            <i class="fab fa-telegram-plane text-2xl group-hover:rotate-12 transition-transform duration-300"></i>
-            <span class="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></span>
+  </div>
+
+  <!-- Оформлення замовлення -->
+  <div id="checkoutModal" class="modal hidden">
+    <div class="bg-slate-900 rounded-3xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-5 mx-4">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-black">Оформлення замовлення</h2>
+        <button onclick="closeCheckout()" class="text-gray-400 text-2xl">&times;</button>
+      </div>
+      <form id="checkoutForm">
+        <input type="text" id="checkoutName" placeholder="ПІБ *" class="w-full bg-slate-800 border-white/10 border rounded-xl p-3 mb-3 text-white">
+        <input type="tel" id="checkoutPhone" placeholder="Номер телефону *" class="w-full bg-slate-800 border-white/10 border rounded-xl p-3 mb-3 text-white">
+        <input type="email" id="checkoutEmail" placeholder="Email" class="w-full bg-slate-800 border-white/10 border rounded-xl p-3 mb-3 text-white">
+        <input type="text" id="checkoutCity" placeholder="Місто *" class="w-full bg-slate-800 border-white/10 border rounded-xl p-3 mb-3 text-white">
+
+        <div class="mb-4">
+          <label class="block text-sm font-bold mb-2">Спосіб оплати</label>
+          <div class="space-y-2">
+            <label class="flex items-center gap-3 p-3 bg-slate-800 rounded-xl">
+              <input type="radio" name="paymentMethod" value="full" checked> <span><i class="fas fa-credit-card"></i> Повна оплата</span>
+            </label>
+            <label class="flex items-center gap-3 p-3 bg-slate-800 rounded-xl">
+              <input type="radio" name="paymentMethod" value="partial"> <span><i class="fas fa-percent"></i> Часткова (30%)</span>
+            </label>
+            <label class="flex items-center gap-3 p-3 bg-slate-800 rounded-xl">
+              <input type="radio" name="paymentMethod" value="post"> <span><i class="fas fa-truck"></i> Оплата на пошті</span>
+            </label>
+          </div>
         </div>
-        <span class="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-300 text-sm font-medium">Написати менеджеру</span>
-    </a>
-    <script>
-        let currentUser = null;
-        let cartItems = [];
-        let products = [];
-        let categories = [];
-        let currentCategory = 'all';
-        let favoriteIds = [];
 
-        async function api(url, options = {}) {
-            try {
-                const res = await fetch(url, {
-                    ...options,
-                    headers: { 'Content-Type': 'application/json', ...options.headers }
-                });
-                if (!res.ok) {
-                    const err = await res.json();
-                    throw new Error(err.error || 'Помилка');
-                }
-                return res.json();
-            } catch(e) {
-                console.error('API Error:', e);
-                throw e;
-            }
+        <textarea id="checkoutAddress" rows="3" placeholder="Адреса відділення Нової Пошти *" class="w-full bg-slate-800 border-white/10 border rounded-xl p-3 mb-3 text-white"></textarea>
+        <button type="submit" class="w-full bg-orange-500 py-3 rounded-xl font-bold">✅ Підтвердити</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Авторизація -->
+  <div id="authModal" class="modal hidden">
+    <div class="bg-slate-900 rounded-3xl max-w-md w-full p-6 mx-4">
+      <div class="flex justify-between items-center mb-5">
+        <h3 id="authTitle" class="text-xl font-black">Вхід</h3>
+        <button onclick="closeAuth()" class="text-gray-400 text-2xl">&times;</button>
+      </div>
+      <form id="authForm">
+        <input type="hidden" id="authMode" value="login">
+        <input type="text" id="authUsername" placeholder="Логін" class="w-full bg-slate-800 border-white/10 border rounded-xl p-3 mb-3 text-white">
+        <input type="password" id="authPassword" placeholder="Пароль" class="w-full bg-slate-800 border-white/10 border rounded-xl p-3 mb-4 text-white">
+        <button type="submit" class="w-full bg-orange-500 py-3 rounded-xl font-bold">Увійти</button>
+        <p class="text-center text-sm text-gray-400 mt-4">
+          <span id="authSwitchText">Немає акаунту?</span>
+          <button type="button" onclick="switchAuthMode()" class="text-orange-500">Зареєструватись</button>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <!-- Мої замовлення -->
+  <div id="ordersModal" class="modal hidden">
+    <div class="bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-5 mx-4">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-black">📦 Мої замовлення</h2>
+        <button onclick="closeOrders()" class="text-gray-400 text-2xl">&times;</button>
+      </div>
+      <div id="ordersList"></div>
+    </div>
+  </div>
+
+  <!-- Обрані товари -->
+  <div id="favoritesModal" class="modal hidden">
+    <div class="bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-5 mx-4">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-black"><i class="fas fa-heart text-red-500"></i> Обрані товари</h2>
+        <button onclick="closeFavorites()" class="text-gray-400 text-2xl">&times;</button>
+      </div>
+      <div id="favoritesList"></div>
+    </div>
+  </div>
+
+  <!-- Кнопка Telegram (менеджер) -->
+  <a href="https://t.me/ArtSeXm" target="_blank" class="fixed bottom-5 right-5 z-50 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-full p-3.5 shadow-2xl transition-all duration-300 hover:scale-110 telegram-btn flex items-center justify-center gap-1">
+    <i class="fab fa-telegram-plane text-xl"></i>
+    <span class="hidden group-hover:inline text-sm">Менеджер</span>
+  </a>
+
+  <!-- ================= JAVASCRIPT ================= -->
+  <script>
+    // ---------- ГЛОБАЛЬНІ ЗМІННІ ----------
+    let currentUser = null;
+    let cartItems = [];
+    let products = [];
+    let categories = [];
+    let currentCategory = 'all';
+    let favoriteIds = [];
+    let searchTimeout = null;
+
+    const searchInput = document.getElementById('searchInput');
+    const searchResults = document.getElementById('searchResults');
+    const searchClearBtn = document.getElementById('searchClearBtn');
+
+    // ---------- ДОПОМІЖНІ ФУНКЦІЇ ----------
+    async function api(url, options = {}) {
+      const res = await fetch(url, {
+        ...options,
+        headers: { 'Content-Type': 'application/json', ...options.headers }
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Помилка');
+      }
+      return res.json();
+    }
+
+    function showToast(msg, isError = false) {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = msg;
+      if (isError) toast.style.background = '#ef4444';
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+    }
+
+    // ---------- КОРИСТУВАЧ ----------
+    async function loadUser() {
+      try {
+        const data = await api('/api/me');
+        if (data.user) {
+          currentUser = data.user;
+          document.getElementById('authButtons').classList.add('hidden');
+          document.getElementById('userMenu').classList.remove('hidden');
+          document.getElementById('userName').innerText = currentUser.username;
+          if (currentUser.is_admin) {
+            document.getElementById('adminPanelBtn')?.classList.remove('hidden');
+          }
+          await loadFavorites();
+        } else {
+          currentUser = null;
+          document.getElementById('authButtons').classList.remove('hidden');
+          document.getElementById('userMenu').classList.add('hidden');
+          document.getElementById('adminPanelBtn')?.classList.add('hidden');
+          favoriteIds = [];
+          renderProducts();
         }
+      } catch (e) { console.error(e); }
+    }
 
-        function showToast(msg, isError = false) {
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.textContent = msg;
-            if (isError) toast.style.background = '#ef4444';
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
+    async function loadFavorites() {
+      if (!currentUser) return;
+      try {
+        favoriteIds = await api('/api/favorites');
+        renderProducts();
+      } catch (e) { console.error(e); }
+    }
+
+    async function toggleFavoriteGlobal(productId, event) {
+      event.stopPropagation();
+      if (!currentUser) {
+        showToast('Увійдіть в акаунт', true);
+        openAuth('login');
+        return;
+      }
+      try {
+        if (favoriteIds.includes(productId)) {
+          await api(`/api/favorites/${productId}`, { method: 'DELETE' });
+          favoriteIds = favoriteIds.filter(id => id !== productId);
+          showToast('❤️ Видалено');
+        } else {
+          await api(`/api/favorites/${productId}`, { method: 'POST' });
+          favoriteIds.push(productId);
+          showToast('💖 Додано');
         }
+        renderProducts();
+      } catch (e) {
+        showToast(e.message, true);
+      }
+    }
 
-        async function loadUser() {
-            try {
-                const data = await api('/api/me');
-                if (data.user) {
-                    currentUser = data.user;
-                    document.getElementById('authButtons').classList.add('hidden');
-                    document.getElementById('userMenu').classList.remove('hidden');
-                    document.getElementById('userName').textContent = currentUser.username;
-
-                    if (currentUser.is_admin) {
-                        const adminBtn = document.getElementById('adminPanelBtn');
-                        if (adminBtn) adminBtn.classList.remove('hidden');
-                    }
-                    await loadFavorites();
-                } else {
-                    currentUser = null;
-                    document.getElementById('authButtons').classList.remove('hidden');
-                    document.getElementById('userMenu').classList.add('hidden');
-                    const adminBtn = document.getElementById('adminPanelBtn');
-                    if (adminBtn) adminBtn.classList.add('hidden');
-                    favoriteIds = [];
-                }
-            } catch(e) {
-                console.error('loadUser error:', e);
-            }
+    // ---------- КАТЕГОРІЇ ТА ТОВАРИ ----------
+    async function loadCategories() {
+      try {
+        categories = await api('/api/categories');
+        const container = document.getElementById('categoriesContainer');
+        if (!categories.length) {
+          container.innerHTML = '<button onclick="setCategory(\'all\')" data-cat="all" class="category-btn active">🔥 Всі товари</button>';
+          return;
         }
+        container.innerHTML = `
+          <button onclick="setCategory('all')" data-cat="all" class="category-btn active">🔥 Всі</button>
+          ${categories.map(c => `<button onclick="setCategory('${escapeHtml(c.name)}')" data-cat="${escapeHtml(c.name)}" class="category-btn">${c.icon || '🏷️'} ${escapeHtml(c.name)}</button>`).join('')}
+        `;
+      } catch (e) { console.error(e); }
+    }
 
-        async function loadFavorites() {
-            if (!currentUser) return;
-            try {
-                favoriteIds = await api('/api/favorites');
-            } catch(e) { console.error(e); }
+    async function loadProducts() {
+      try {
+        const url = currentCategory === 'all' ? '/api/products' : `/api/products?category=${encodeURIComponent(currentCategory)}`;
+        products = await api(url);
+        renderProducts();
+      } catch (e) {
+        document.getElementById('productsGrid').innerHTML = '<div class="col-span-full text-center text-red-500">Помилка</div>';
+      }
+    }
+
+    function renderStars(rating) {
+      let starsHtml = '';
+      for (let i = 1; i <= 5; i++) {
+        if (i <= Math.floor(rating)) {
+          starsHtml += '<i class="fas fa-star"></i>';
+        } else if (rating % 1 >= 0.5 && i === Math.floor(rating) + 1) {
+          starsHtml += '<i class="fas fa-star-half-alt"></i>';
+        } else {
+          starsHtml += '<i class="far fa-star"></i>';
         }
+      }
+      return starsHtml;
+    }
 
-        async function toggleFavoriteGlobal(productId, event) {
-            event.stopPropagation();
-            if (!currentUser) {
-                showToast('Увійдіть в акаунт, щоб додати в обране', true);
-                openAuth('login');
-                return;
-            }
+    function renderProducts() {
+      const grid = document.getElementById('productsGrid');
+      if (!products.length) {
+        grid.innerHTML = '<div class="col-span-full text-center text-gray-400 py-12">📭 Товарів поки немає</div>';
+        return;
+      }
+      grid.innerHTML = products.map(p => {
+        const isFav = favoriteIds.includes(p.id);
+        return `
+          <div class="product-card" onclick="location.href='/product/${p.id}'">
+            <div class="product-image-wrapper">
+              <div class="product-badge">${p.category || 'KISIK'}</div>
+              <div class="favorite-icon" onclick="toggleFavoriteGlobal(${p.id}, event)">
+                <i class="${isFav ? 'fas' : 'far'} fa-heart"></i>
+              </div>
+              <img src="${p.photos?.[0] || 'https://placehold.co/400x400?text=KISIK'}" class="product-image" loading="lazy" onerror="this.src='https://placehold.co/400x400?text=KISIK'">
+            </div>
+            <div class="product-info">
+              <div class="product-title">${escapeHtml(p.name)}</div>
+              <div class="rating-wrapper">
+                <div class="stars">${renderStars(p.rating_avg || 0)}</div>
+                <span class="text-[10px] text-gray-500">(${p.rating_count || 0})</span>
+              </div>
+              <div class="price-row">
+                <span class="current-price">${p.price} ₴</span>
+              </div>
+              <div class="sizes-pills">
+                ${p.sizes.slice(0, 3).map(s => `<span class="size-pill">${s}</span>`).join('')}
+                ${p.sizes.length > 3 ? `<span class="size-pill">+${p.sizes.length - 3}</span>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
 
-            try {
-                const isFav = favoriteIds.includes(productId);
-                if (isFav) {
-                    await api(`/api/favorites/${productId}`, { method: 'DELETE' });
-                    favoriteIds = favoriteIds.filter(id => id !== productId);
-                    showToast('❤️ Видалено з обраного');
-                } else {
-                    await api(`/api/favorites/${productId}`, { method: 'POST' });
-                    favoriteIds.push(productId);
-                    showToast('💖 Додано в обране');
-                }
-                renderProducts();
-            } catch(e) {
-                showToast('❌ ' + e.message, true);
-            }
-        }
+    function setCategory(cat) {
+      currentCategory = cat;
+      document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelector(`.category-btn[data-cat="${cat}"]`)?.classList.add('active');
+      loadProducts();
+    }
 
-        function openAuth(mode) {
-            document.getElementById('authMode').value = mode;
-            document.getElementById('authTitle').textContent = mode === 'login' ? 'Вхід' : 'Реєстрація';
-            const switchText = document.getElementById('authSwitchText');
-            const switchBtn = document.querySelector('#authForm .text-orange-500');
-            if (mode === 'login') {
-                switchText.textContent = 'Немає акаунту?';
-                if (switchBtn) switchBtn.textContent = 'Зареєструватись';
-            } else {
-                switchText.textContent = 'Вже є акаунт?';
-                if (switchBtn) switchBtn.textContent = 'Увійти';
-            }
-            document.getElementById('authModal').classList.remove('hidden');
-        }
+    // ---------- КОШИК ----------
+    async function loadCart() {
+      try {
+        cartItems = await api('/api/cart');
+        updateCartUI();
+      } catch (e) { console.error(e); }
+    }
 
-        function closeAuth() { document.getElementById('authModal').classList.add('hidden'); }
+    function updateCartUI() {
+      const count = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+      const badge = document.getElementById('cartCount');
+      if (count > 0) {
+        badge.textContent = count;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
 
-        function switchAuthMode() {
-            const mode = document.getElementById('authMode').value;
-            openAuth(mode === 'login' ? 'register' : 'login');
-        }
+    function toggleCart() {
+      renderCart();
+      document.getElementById('cartModal').classList.toggle('hidden');
+    }
 
-        document.getElementById('authForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const mode = document.getElementById('authMode').value;
-            const username = document.getElementById('authUsername').value;
-            const password = document.getElementById('authPassword').value;
-            try {
-                const endpoint = mode === 'login' ? '/api/login' : '/api/register';
-                await api(endpoint, { method: 'POST', body: JSON.stringify({ username, password }) });
-                showToast(mode === 'login' ? '✅ Вхід виконано' : '✅ Реєстрація успішна');
-                closeAuth();
-                await loadUser();
-                await loadCart();
-            } catch(e) { showToast('❌ ' + e.message, true); }
-        };
+    async function renderCart() {
+      const container = document.getElementById('cartItems');
+      const empty = document.getElementById('cartEmpty');
+      const summary = document.getElementById('cartSummary');
+      if (!cartItems.length) {
+        container.innerHTML = '';
+        empty.classList.remove('hidden');
+        summary.classList.add('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+      summary.classList.remove('hidden');
+      let total = 0;
+      container.innerHTML = cartItems.map(item => {
+        total += item.price * item.quantity;
+        return `
+          <div class="flex gap-3 p-3 bg-white/5 rounded-xl mb-2">
+            <img src="${item.photo || 'https://placehold.co/80'}" class="w-16 h-16 rounded-lg object-cover">
+            <div class="flex-1">
+              <div class="font-bold text-sm">${escapeHtml(item.name)}</div>
+              <div class="text-xs">Розмір: ${item.size}</div>
+              <div class="text-orange-400 text-sm font-bold">${item.price} грн</div>
+              <div class="flex items-center gap-2 mt-1">
+                <button onclick="updateQty(${item.id}, ${item.quantity - 1})" class="w-6 h-6 bg-white/10 rounded-full text-xs">-</button>
+                <span class="text-sm">${item.quantity}</span>
+                <button onclick="updateQty(${item.id}, ${item.quantity + 1})" class="w-6 h-6 bg-white/10 rounded-full text-xs">+</button>
+                <button onclick="removeItem(${item.id})" class="ml-auto text-red-400 text-sm"><i class="fas fa-trash"></i></button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      document.getElementById('cartTotal').innerText = total + ' грн';
+    }
 
-        async function logout() {
-            await api('/api/logout', { method: 'POST' });
-            window.location.href = '/';
-        }
+    async function updateQty(id, qty) {
+      if (qty <= 0) {
+        await removeItem(id);
+        return;
+      }
+      await api('/api/cart/update', { method: 'POST', body: JSON.stringify({ cart_item_id: id, quantity: qty }) });
+      await loadCart();
+      renderCart();
+    }
 
-        function toggleUserMenu() {
-            const dropdown = document.getElementById('userDropdown');
-            dropdown.classList.toggle('hidden');
-        }
+    async function removeItem(id) {
+      await api(`/api/cart/${id}`, { method: 'DELETE' });
+      await loadCart();
+      renderCart();
+    }
 
-        async function loadCategories() {
-            try {
-                categories = await api('/api/categories');
-                const container = document.getElementById('categoriesContainer');
-                if (!categories.length) {
-                    container.innerHTML = '<button onclick="setCategory(\'all\')" data-cat="all" class="category-btn active">🔥 Всі товари</button>';
-                    return;
-                }
-                container.innerHTML = `
-                    <button onclick="setCategory('all')" data-cat="all" class="category-btn active">🔥 Всі товари</button>
-                    ${categories.map(c => `<button onclick="setCategory('${escapeHtml(c.name)}')" data-cat="${escapeHtml(c.name)}" class="category-btn">${c.icon || '🏷️'} ${escapeHtml(c.name)}</button>`).join('')}
-                `;
-            } catch(e) {
-                console.error(e);
-                document.getElementById('categoriesContainer').innerHTML = '<div class="text-red-400">Помилка завантаження категорій</div>';
-            }
-        }
+    function openCheckout() {
+      if (!cartItems.length) {
+        showToast('Кошик порожній', true);
+        return;
+      }
+      toggleCart();
+      document.getElementById('checkoutModal').classList.remove('hidden');
+    }
 
-        async function loadProducts() {
-            try {
-                const url = currentCategory === 'all' ? '/api/products' : `/api/products?category=${encodeURIComponent(currentCategory)}`;
-                products = await api(url);
-                renderProducts();
-            } catch(e) {
-                console.error(e);
-                document.getElementById('productsGrid').innerHTML = '<div class="col-span-full text-center text-red-500">❌ Помилка завантаження товарів</div>';
-            }
-        }
+    function closeCheckout() {
+      document.getElementById('checkoutModal').classList.add('hidden');
+    }
 
-        function renderStars(rating) {
-            const fullStars = Math.floor(rating);
-            const hasHalf = rating % 1 >= 0.5;
-            let stars = '';
-            for (let i = 0; i < fullStars; i++) stars += '<i class="fas fa-star"></i>';
-            if (hasHalf) stars += '<i class="fas fa-star-half-alt"></i>';
-            for (let i = stars.length; i < 5; i++) stars += '<i class="far fa-star"></i>';
-            return stars;
-        }
+    // ---------- ОФОРМЛЕННЯ ЗАМОВЛЕННЯ ----------
+    document.getElementById('checkoutForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('checkoutName').value.trim();
+      const phone = document.getElementById('checkoutPhone').value.trim();
+      const email = document.getElementById('checkoutEmail').value.trim();
+      const city = document.getElementById('checkoutCity').value.trim();
+      const address = document.getElementById('checkoutAddress').value.trim();
+      const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
 
-        function renderProducts() {
-            const grid = document.getElementById('productsGrid');
-            if (!products.length) {
-                grid.innerHTML = '<div class="col-span-full text-center text-gray-400 py-20">📭 Товарів поки немає</div>';
-                return;
-            }
-            grid.innerHTML = products.map(p => {
-                const isFavorited = favoriteIds.includes(p.id);
-                return `
-                <div class="product-card" onclick="location.href='/product/${p.id}'">
-                    <div class="favorite-icon" onclick="toggleFavoriteGlobal(${p.id}, event)">
-                        <i class="${isFavorited ? 'fas' : 'far'} fa-heart"></i>
-                    </div>
-                    <img src="${p.photos[0] || 'https://placehold.co/400x400?text=KISIK'}" class="w-full h-64 object-cover" onerror="this.src='https://placehold.co/400x400?text=KISIK'">
-                    <div class="p-4">
-                        <h3 class="font-bold text-lg">${escapeHtml(p.name)}</h3>
-                        <div class="flex items-center gap-1 text-yellow-400 text-sm my-1">
-                            ${renderStars(p.rating_avg || 0)}
-                            <span class="text-gray-500 text-xs ml-1">(${p.rating_count || 0})</span>
-                        </div>
-                        <p class="text-orange-400 font-bold text-xl my-2">${p.price} грн</p>
-                        <div class="flex gap-2 mt-2">
-                            ${p.sizes.slice(0, 3).map(s => `<span class="text-xs bg-white/10 px-2 py-1 rounded">${s}</span>`).join('')}
-                            ${p.sizes.length > 3 ? `<span class="text-xs bg-white/10 px-2 py-1 rounded">+${p.sizes.length - 3}</span>` : ''}
-                        </div>
-                    </div>
-                </div>
-            `}).join('');
-        }
+      if (!name || !phone || !city || !address) {
+        showToast('❌ Заповніть всі обов\'язкові поля', true);
+        return;
+      }
 
-        function setCategory(cat) {
-            currentCategory = cat;
-            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
-            const activeBtn = document.querySelector(`.category-btn[data-cat="${cat}"]`);
-            if (activeBtn) activeBtn.classList.add('active');
-            loadProducts();
-        }
+      const btn = document.querySelector('#checkoutForm button[type="submit"]');
+      btn.disabled = true;
+      btn.textContent = '⏳ Відправка...';
 
-        async function loadCart() {
-            try {
-                cartItems = await api('/api/cart');
-                updateCartUI();
-            } catch(e) { console.error(e); }
-        }
-
-        function updateCartUI() {
-            const count = cartItems.reduce((s, i) => s + i.quantity, 0);
-            const badge = document.getElementById('cartCount');
-            if (count > 0) { badge.textContent = count; badge.classList.remove('hidden'); }
-            else { badge.classList.add('hidden'); }
-        }
-
-        function toggleCart() { renderCart(); document.getElementById('cartModal').classList.toggle('hidden'); }
-
-        async function renderCart() {
-            const container = document.getElementById('cartItems');
-            const empty = document.getElementById('cartEmpty');
-            const summary = document.getElementById('cartSummary');
-            if (!cartItems.length) {
-                container.innerHTML = ''; empty.classList.remove('hidden'); summary.classList.add('hidden');
-                return;
-            }
-            empty.classList.add('hidden'); summary.classList.remove('hidden');
-            let total = 0;
-            container.innerHTML = cartItems.map(item => {
-                total += item.price * item.quantity;
-                return `
-                    <div class="flex gap-4 p-4 bg-white/5 rounded-2xl mb-3">
-                        <img src="${item.photo || 'https://placehold.co/80'}" class="w-20 h-20 rounded-xl object-cover">
-                        <div class="flex-1">
-                            <h4 class="font-bold">${escapeHtml(item.name)}</h4>
-                            <p class="text-sm">Розмір: ${item.size}</p>
-                            ${item.color ? `<p class="text-sm">Колір: ${item.color}</p>` : ''}
-                            <p class="text-orange-400">${item.price} грн</p>
-                            <div class="flex items-center gap-2 mt-2">
-                                <button onclick="updateQty(${item.id}, ${item.quantity - 1})" class="w-8 h-8 bg-white/10 rounded-full">-</button>
-                                <span>${item.quantity}</span>
-                                <button onclick="updateQty(${item.id}, ${item.quantity + 1})" class="w-8 h-8 bg-white/10 rounded-full">+</button>
-                                <button onclick="removeItem(${item.id})" class="ml-auto text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            document.getElementById('cartTotal').textContent = total + ' грн';
-        }
-
-        async function updateQty(id, qty) {
-            if (qty <= 0) { await removeItem(id); return; }
-            await api('/api/cart/update', { method: 'POST', body: JSON.stringify({ cart_item_id: id, quantity: qty }) });
-            await loadCart();
-            renderCart();
-        }
-
-        async function removeItem(id) {
-            await api(`/api/cart/${id}`, { method: 'DELETE' });
-            await loadCart();
-            renderCart();
-        }
-
-        function openCheckout() {
-            if (!cartItems.length) { showToast('Кошик порожній', true); return; }
-            toggleCart();
-            document.getElementById('checkoutModal').classList.remove('hidden');
-        }
-
-        function closeCheckout() { document.getElementById('checkoutModal').classList.add('hidden'); }
-
-        document.getElementById('checkoutForm').onsubmit = async (e) => {
-            e.preventDefault();
-
-            const name = document.getElementById('checkoutName').value.trim();
-            const phone = document.getElementById('checkoutPhone').value.trim();
-            const email = document.getElementById('checkoutEmail').value.trim();
-            const city = document.getElementById('checkoutCity').value.trim();
-            const warehouse_address = document.getElementById('checkoutAddress').value.trim();
-            const payment_method = document.querySelector('input[name="paymentMethod"]:checked').value;
-
-            if (!name || !phone || !city || !warehouse_address) {
-                showToast('❌ Заповніть всі обов\'язкові поля', true);
-                return;
-            }
-
-            const submitBtn = document.querySelector('#checkoutForm button[type="submit"]');
-            submitBtn.disabled = true;
-            submitBtn.textContent = '⏳ Відправка...';
-
-            try {
-                const data = await api('/api/checkout', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        name, phone, email, city, warehouse_address, payment_method
-                    })
-                });
-
-                showToast(`✅ Замовлення №${data.order_number} створено! Дякуємо!`);
-                closeCheckout();
-                await loadCart();
-                renderCart();
-
-                document.getElementById('checkoutName').value = '';
-                document.getElementById('checkoutPhone').value = '';
-                document.getElementById('checkoutEmail').value = '';
-                document.getElementById('checkoutCity').value = '';
-                document.getElementById('checkoutAddress').value = '';
-
-            } catch(e) {
-                showToast('❌ ' + e.message, true);
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = '✅ Підтвердити замовлення';
-            }
-        };
-
-        async function showOrders() {
-            if (!currentUser) { showToast('Увійдіть в акаунт', true); return; }
-            try {
-                const orders = await api('/api/orders');
-                const container = document.getElementById('ordersList');
-                if (!orders.length) {
-                    container.innerHTML = '<div class="text-center py-10 text-gray-400">📭 У вас ще немає замовлень</div>';
-                } else {
-                    container.innerHTML = orders.map(o => `
-                        <div class="bg-white/5 rounded-2xl p-4 mb-3">
-                            <div class="flex justify-between items-start">
-                                <span class="font-mono text-orange-400">№${o.order_number}</span>
-                                <span class="text-xs px-2 py-1 rounded-full ${o.status === 'new' ? 'order-status-new' : 'order-status-completed'}">
-                                    ${o.status === 'new' ? '🆕 Нове' : '✅ Виконано'}
-                                </span>
-                            </div>
-                            <p class="text-sm text-gray-400 mt-2">📅 ${new Date(o.created_at).toLocaleDateString()}</p>
-                            <p class="font-bold mt-2">💰 ${o.total_price} грн</p>
-                            <div class="mt-2 text-sm text-gray-300">
-                                ${o.items.map(i => `• ${escapeHtml(i.name)} (${i.size})${i.color ? `, ${i.color}` : ''} x${i.quantity} = ${i.total} грн`).join('<br>')}
-                            </div>
-                        </div>
-                    `).join('');
-                }
-                document.getElementById('ordersModal').classList.remove('hidden');
-                toggleUserMenu();
-            } catch(e) { showToast('❌ ' + e.message, true); }
-        }
-
-        function closeOrders() { document.getElementById('ordersModal').classList.add('hidden'); }
-
-        async function showFavorites() {
-            if (!currentUser) {
-                showToast('Увійдіть в акаунт', true);
-                return;
-            }
-            try {
-                if (!favoriteIds.length) {
-                    document.getElementById('favoritesList').innerHTML = '<div class="text-center py-10 text-gray-400">❤️ У вас ще немає обраних товарів</div>';
-                } else {
-                    const productsData = await Promise.all(favoriteIds.map(id => api(`/api/products/${id}`)));
-                    document.getElementById('favoritesList').innerHTML = productsData.map(p => `
-                        <div class="flex gap-4 p-4 bg-white/5 rounded-2xl mb-3 cursor-pointer" onclick="location.href='/product/${p.id}'">
-                            <img src="${p.photos[0] || 'https://placehold.co/80'}" class="w-20 h-20 rounded-xl object-cover">
-                            <div class="flex-1">
-                                <h4 class="font-bold">${escapeHtml(p.name)}</h4>
-                                <p class="text-orange-400 font-bold">${p.price} грн</p>
-                                <div class="flex text-yellow-400 text-sm mt-1">${renderStars(p.rating_avg || 0)}</div>
-                            </div>
-                        </div>
-                    `).join('');
-                }
-                document.getElementById('favoritesModal').classList.remove('hidden');
-                toggleUserMenu();
-            } catch(e) { showToast('❌ ' + e.message, true); }
-        }
-
-        function closeFavorites() { document.getElementById('favoritesModal').classList.add('hidden'); }
-
-        // ============ ПОШУК ТОВАРІВ ============
-        let searchTimeout = null;
-        const searchInput = document.getElementById('searchInput');
-        const searchResults = document.getElementById('searchResults');
-        const searchResultsList = document.getElementById('searchResultsList');
-        const searchClearBtn = document.getElementById('searchClearBtn');
-
-        async function searchProducts(query) {
-            if (!query || query.length < 2) {
-                searchResults.classList.add('hidden');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-                const products = await response.json();
-                
-                if (products.length === 0) {
-                    searchResultsList.innerHTML = '<div class="p-4 text-center text-gray-400">😔 Товарів не знайдено</div>';
-                    searchResults.classList.remove('hidden');
-                    return;
-                }
-                
-                searchResultsList.innerHTML = products.map(p => `
-                    <div class="search-result-item flex items-center gap-3 p-3 hover:bg-white/10 cursor-pointer transition border-b border-white/5 last:border-0"
-                         onclick="location.href='/product/${p.id}'">
-                        <img src="${p.photo || 'https://placehold.co/50'}" class="w-12 h-12 rounded-lg object-cover" onerror="this.src='https://placehold.co/50?text=KISIK'">
-                        <div class="flex-1">
-                            <div class="font-bold text-white">${escapeHtml(p.name)}</div>
-                            <div class="flex items-center gap-2 text-sm">
-                                <span class="text-orange-400 font-bold">${p.price} грн</span>
-                                <span class="text-gray-500">${escapeHtml(p.category)}</span>
-                            </div>
-                        </div>
-                        <i class="fas fa-arrow-right text-gray-500"></i>
-                    </div>
-                `).join('');
-                searchResults.classList.remove('hidden');
-                
-            } catch(e) {
-                console.error('Search error:', e);
-            }
-        }
-
-        function handleSearchInput() {
-            const query = searchInput.value.trim();
-            
-            if (query) {
-                searchClearBtn.classList.remove('hidden');
-            } else {
-                searchClearBtn.classList.add('hidden');
-            }
-            
-            if (searchTimeout) clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => searchProducts(query), 300);
-        }
-
-        function clearSearch() {
-            searchInput.value = '';
-            searchClearBtn.classList.add('hidden');
-            searchResults.classList.add('hidden');
-            searchInput.focus();
-        }
-
-        document.addEventListener('click', (e) => {
-            const menu = document.getElementById('userMenu');
-            if (menu && !menu.contains(e.target) && !document.getElementById('userDropdown')?.contains(e.target)) {
-                document.getElementById('userDropdown')?.classList.add('hidden');
-            }
-            
-            if (searchInput && !searchInput.contains(e.target) && searchResults && !searchResults.contains(e.target)) {
-                searchResults.classList.add('hidden');
-            }
+      try {
+        const data = await api('/api/checkout', {
+          method: 'POST',
+          body: JSON.stringify({
+            name, phone, email, city, warehouse_address: address, payment_method: paymentMethod
+          })
         });
+        showToast(`✅ Замовлення №${data.order_number} створено! Дякуємо!`);
+        closeCheckout();
+        await loadCart();
+        renderCart();
+        document.getElementById('checkoutName').value = '';
+        document.getElementById('checkoutPhone').value = '';
+        document.getElementById('checkoutEmail').value = '';
+        document.getElementById('checkoutCity').value = '';
+        document.getElementById('checkoutAddress').value = '';
+      } catch (e) {
+        showToast('❌ ' + e.message, true);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '✅ Підтвердити';
+      }
+    };
 
-        if (searchInput) {
-            searchInput.addEventListener('input', handleSearchInput);
-            searchInput.addEventListener('focus', () => {
-                if (searchInput.value.trim().length >= 2) {
-                    searchProducts(searchInput.value.trim());
-                }
-            });
+    // ---------- АВТОРИЗАЦІЯ ----------
+    function openAuth(mode) {
+      document.getElementById('authMode').value = mode;
+      document.getElementById('authTitle').textContent = mode === 'login' ? 'Вхід' : 'Реєстрація';
+      const switchText = document.getElementById('authSwitchText');
+      if (mode === 'login') {
+        switchText.textContent = 'Немає акаунту?';
+      } else {
+        switchText.textContent = 'Вже є акаунт?';
+      }
+      document.getElementById('authModal').classList.remove('hidden');
+    }
+
+    function closeAuth() {
+      document.getElementById('authModal').classList.add('hidden');
+    }
+
+    function switchAuthMode() {
+      const mode = document.getElementById('authMode').value;
+      openAuth(mode === 'login' ? 'register' : 'login');
+    }
+
+    document.getElementById('authForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const mode = document.getElementById('authMode').value;
+      const username = document.getElementById('authUsername').value;
+      const password = document.getElementById('authPassword').value;
+      try {
+        const endpoint = mode === 'login' ? '/api/login' : '/api/register';
+        await api(endpoint, { method: 'POST', body: JSON.stringify({ username, password }) });
+        showToast(mode === 'login' ? '✅ Вхід виконано' : '✅ Реєстрація успішна');
+        closeAuth();
+        await loadUser();
+        await loadCart();
+      } catch (e) {
+        showToast('❌ ' + e.message, true);
+      }
+    };
+
+    async function logout() {
+      await api('/api/logout', { method: 'POST' });
+      window.location.href = '/';
+    }
+
+    function toggleUserMenu() {
+      const dropdown = document.getElementById('userDropdown');
+      dropdown.classList.toggle('hidden');
+    }
+
+    // ---------- ЗАМОВЛЕННЯ КОРИСТУВАЧА ----------
+    async function showOrders() {
+      if (!currentUser) {
+        showToast('Увійдіть в акаунт', true);
+        return;
+      }
+      try {
+        const orders = await api('/api/orders');
+        const container = document.getElementById('ordersList');
+        if (!orders.length) {
+          container.innerHTML = '<div class="text-center py-10 text-gray-400">📭 У вас ще немає замовлень</div>';
+        } else {
+          container.innerHTML = orders.map(o => `
+            <div class="bg-white/5 rounded-2xl p-4 mb-3">
+              <div class="flex justify-between items-start">
+                <span class="font-mono text-orange-400">№${o.order_number}</span>
+                <span class="text-xs px-2 py-1 rounded-full ${o.status === 'new' ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'}">
+                  ${o.status === 'new' ? '🆕 Нове' : '✅ Виконано'}
+                </span>
+              </div>
+              <p class="text-sm text-gray-400 mt-2">📅 ${new Date(o.created_at).toLocaleDateString()}</p>
+              <p class="font-bold mt-2">💰 ${o.total_price} грн</p>
+              <div class="mt-2 text-sm text-gray-300">
+                ${o.items.map(i => `• ${escapeHtml(i.name)} (${i.size}) x${i.quantity} = ${i.total} грн`).join('<br>')}
+              </div>
+            </div>
+          `).join('');
         }
+        document.getElementById('ordersModal').classList.remove('hidden');
+        toggleUserMenu();
+      } catch (e) {
+        showToast('❌ ' + e.message, true);
+      }
+    }
 
-        if (searchClearBtn) {
-            searchClearBtn.addEventListener('click', clearSearch);
+    function closeOrders() {
+      document.getElementById('ordersModal').classList.add('hidden');
+    }
+
+    // ---------- ОБРАНІ ТОВАРИ ----------
+    async function showFavorites() {
+      if (!currentUser) {
+        showToast('Увійдіть в акаунт', true);
+        return;
+      }
+      try {
+        if (!favoriteIds.length) {
+          document.getElementById('favoritesList').innerHTML = '<div class="text-center py-10 text-gray-400">❤️ У вас ще немає обраних товарів</div>';
+        } else {
+          const productsData = await Promise.all(favoriteIds.map(id => api(`/api/products/${id}`)));
+          document.getElementById('favoritesList').innerHTML = productsData.map(p => `
+            <div class="flex gap-4 p-4 bg-white/5 rounded-2xl mb-3 cursor-pointer" onclick="location.href='/product/${p.id}'">
+              <img src="${p.photos?.[0] || 'https://placehold.co/80'}" class="w-20 h-20 rounded-xl object-cover">
+              <div class="flex-1">
+                <h4 class="font-bold">${escapeHtml(p.name)}</h4>
+                <p class="text-orange-400 font-bold">${p.price} грн</p>
+                <div class="flex text-yellow-400 text-sm mt-1">${renderStars(p.rating_avg || 0)}</div>
+              </div>
+            </div>
+          `).join('');
         }
+        document.getElementById('favoritesModal').classList.remove('hidden');
+        toggleUserMenu();
+      } catch (e) {
+        showToast('❌ ' + e.message, true);
+      }
+    }
 
-        function escapeHtml(str) {
-            if (!str) return '';
-            return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+    function closeFavorites() {
+      document.getElementById('favoritesModal').classList.add('hidden');
+    }
+
+    // ---------- ПОШУК ТОВАРІВ ----------
+    async function searchProducts(query) {
+      if (!query || query.length < 2) {
+        searchResults.classList.add('hidden');
+        return;
+      }
+      try {
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const results = await response.json();
+        if (!results.length) {
+          searchResults.innerHTML = '<div class="p-4 text-center text-gray-400">😔 Товарів не знайдено</div>';
+          searchResults.classList.remove('hidden');
+          return;
         }
+        searchResults.innerHTML = results.map(p => `
+          <div class="flex items-center gap-3 p-3 hover:bg-white/10 cursor-pointer transition border-b border-white/5" onclick="location.href='/product/${p.id}'">
+            <img src="${p.photo || 'https://placehold.co/50'}" class="w-12 h-12 rounded-lg object-cover">
+            <div class="flex-1">
+              <div class="font-bold text-white">${escapeHtml(p.name)}</div>
+              <div class="flex items-center gap-2 text-sm">
+                <span class="text-orange-400 font-bold">${p.price} грн</span>
+                <span class="text-gray-500">${escapeHtml(p.category)}</span>
+              </div>
+            </div>
+            <i class="fas fa-arrow-right text-gray-500"></i>
+          </div>
+        `).join('');
+        searchResults.classList.remove('hidden');
+      } catch (e) {
+        console.error('Search error:', e);
+      }
+    }
 
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
-        });
+    function handleSearchInput() {
+      const query = searchInput.value.trim();
+      if (query) {
+        searchClearBtn.classList.remove('hidden');
+      } else {
+        searchClearBtn.classList.add('hidden');
+      }
+      if (searchTimeout) clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => searchProducts(query), 300);
+    }
 
-        async function init() {
-            await loadUser();
-            await loadCategories();
-            await loadProducts();
-            await loadCart();
+    function clearSearch() {
+      searchInput.value = '';
+      searchClearBtn.classList.add('hidden');
+      searchResults.classList.add('hidden');
+      searchInput.focus();
+    }
+
+    // ---------- ЗАКРИТТЯ МОДАЛОК ПО КЛІКУ НА ОВЕРЛЕЙ ----------
+    document.querySelectorAll('.modal').forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.add('hidden');
+      });
+    });
+
+    // Закриття дропдауну при кліку поза ним
+    document.addEventListener('click', (e) => {
+      const menu = document.getElementById('userMenu');
+      if (menu && !menu.contains(e.target)) {
+        document.getElementById('userDropdown')?.classList.add('hidden');
+      }
+      if (searchInput && !searchInput.contains(e.target) && searchResults && !searchResults.contains(e.target)) {
+        searchResults.classList.add('hidden');
+      }
+    });
+
+    // ---------- ПІДКЛЮЧЕННЯ ПОДІЙ ПОШУКУ ----------
+    if (searchInput) {
+      searchInput.addEventListener('input', handleSearchInput);
+      searchInput.addEventListener('focus', () => {
+        if (searchInput.value.trim().length >= 2) {
+          searchProducts(searchInput.value.trim());
         }
+      });
+    }
+    if (searchClearBtn) {
+      searchClearBtn.addEventListener('click', clearSearch);
+    }
 
-        init();
-    </script>
-    
+    // ---------- ІНІЦІАЛІЗАЦІЯ ----------
+    async function init() {
+      await loadUser();
+      await loadCategories();
+      await loadProducts();
+      await loadCart();
+    }
+
+    init();
+  </script>
 </body>
 </html>
