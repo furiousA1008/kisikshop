@@ -27,18 +27,32 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# ============ КОНФІГУРАЦІЯ ============
-app.config['SECRET_KEY'] = secrets.token_hex(32)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shop.db'
+# ============ КОНФІГУРАЦІЯ БАЗИ ДАНИХ ============
+# Підтримка PostgreSQL (Render) та SQLite (локально / з диском)
+DATA_DIR = '/data' if os.path.exists('/data') else os.path.dirname(os.path.abspath(__file__))
+os.makedirs(DATA_DIR, exist_ok=True)
+
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL and DATABASE_URL.startswith('postgres'):
+    # Використовуємо PostgreSQL на Render
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+    logger.info(f"Using PostgreSQL database")
+else:
+    # Використовуємо SQLite (локально або на Render з диском)
+    db_path = os.path.join(DATA_DIR, 'shop.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+    logger.info(f"Using SQLite database at: {db_path}")
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = secrets.token_hex(32)
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 
 db = SQLAlchemy(app)
 
-# ============ TELEGRAM КОНФІГ ДЛЯ КНОПКИ ЗВ'ЯЗКУ ============
-TELEGRAM_SUPPORT_CHAT_ID = "807319863"  # ID чату менеджера (можна змінити)
-TELEGRAM_BOT_LINK = "https://t.me/kisik_support_bot"  # Посилання на бота або чат
+# ============ TELEGRAM КОНФІГ ============
+TELEGRAM_SUPPORT_CHAT_ID = "807319863"
+TELEGRAM_BOT_LINK = "https://t.me/kisik_support_bot"
 
 # ============ CLOUDFLARE R2 КОНФІГУРАЦІЯ ============
 R2_ACCOUNT_ID = "71580147ba20088caf6fa682a7e8edf2"
@@ -86,7 +100,7 @@ def send_telegram_message(text, chat_id):
         return False
 
 def send_order_notification(order_id, items_data):
-    """Відправляє текстове сповіщення про замовлення з посиланнями на товари"""
+    """Відправляє текстове сповіщення про замовлення"""
     with app.app_context():
         try:
             order = db.session.get(Order, order_id)
@@ -357,6 +371,7 @@ def is_admin():
     return False
 
 def migrate_database():
+    """Міграція бази даних - додає нові колонки якщо їх немає"""
     try:
         # Users table
         result = db.session.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")).fetchone()
@@ -420,7 +435,7 @@ def migrate_database():
                 db.session.execute(text("ALTER TABLE cart_items ADD COLUMN color VARCHAR(50)"))
             db.session.commit()
 
-        # Create reviews table
+        # Create reviews table if not exists
         db.session.execute(text("""
             CREATE TABLE IF NOT EXISTS reviews (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -435,7 +450,7 @@ def migrate_database():
             )
         """))
 
-        # Create favorites table
+        # Create favorites table if not exists
         db.session.execute(text("""
             CREATE TABLE IF NOT EXISTS favorites (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -449,10 +464,13 @@ def migrate_database():
         """))
 
         db.session.commit()
+        logger.info("Database migration completed")
     except Exception as e:
         logger.error(f"Migration error: {e}")
 
-# ============ API КАТЕГОРІЇ ============
+# ============ API МАРШРУТИ ============
+
+# Категорії
 @app.route('/api/categories', methods=['GET'])
 def get_categories():
     categories = Category.query.order_by(Category.name).all()
@@ -483,7 +501,7 @@ def delete_category(category_id):
     db.session.commit()
     return jsonify({'status': 'ok'})
 
-# ============ API КОЛЬОРІВ ============
+# Кольори
 @app.route('/api/colors', methods=['GET'])
 def get_colors():
     colors = Color.query.order_by(Color.name).all()
@@ -515,7 +533,7 @@ def delete_color(color_id):
     db.session.commit()
     return jsonify({'status': 'ok'})
 
-# ============ API АВТОРИЗАЦІЯ ============
+# Авторизація
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.json
@@ -556,7 +574,7 @@ def get_me():
         return jsonify({'user': None})
     return jsonify({'user': {'id': user.id, 'username': user.username, 'is_admin': user.is_admin}})
 
-# ============ API ВІДГУКІВ ============
+# Відгуки
 @app.route('/api/products/<int:product_id>/reviews', methods=['GET'])
 def get_product_reviews(product_id):
     reviews = Review.query.filter_by(product_id=product_id).order_by(Review.created_at.desc()).all()
@@ -594,7 +612,7 @@ def add_review(product_id):
 
     return jsonify({'status': 'ok', 'rating_avg': product.rating_avg, 'rating_count': product.rating_count})
 
-# ============ API ВПОДОБАНЬ ============
+# Вподобання
 @app.route('/api/favorites', methods=['GET'])
 @login_required
 def get_favorites():
@@ -626,7 +644,7 @@ def remove_favorite(product_id):
         db.session.commit()
     return jsonify({'status': 'ok', 'favorited': False})
 
-# ============ API ТОВАРИ ============
+# Товари
 @app.route('/api/products', methods=['GET'])
 def get_products():
     category = request.args.get('category')
@@ -784,7 +802,7 @@ def upload_size_chart():
     url = upload_size_chart_to_r2(file_data, file.filename)
     return jsonify({'url': url})
 
-# ============ API КОШИК ============
+# Кошик
 @app.route('/api/cart', methods=['GET'])
 def get_cart():
     session_id = get_cart_session_id()
@@ -853,7 +871,7 @@ def update_cart():
         db.session.commit()
     return jsonify({'status': 'ok'})
 
-# ============ API ЗАМОВЛЕННЯ ============
+# Замовлення
 @app.route('/api/checkout', methods=['POST'])
 def checkout():
     data = request.json
@@ -930,7 +948,7 @@ def get_orders():
         'items': json.loads(o.items) if o.items else []
     } for o in orders])
 
-# ============ API АДМІН ============
+# Адмін API
 @app.route('/api/admin/orders', methods=['GET'])
 @admin_required
 def admin_get_orders():
@@ -1026,7 +1044,6 @@ def admin_delete_user(user_id):
     if user.username == 'admin':
         return jsonify({'error': 'Не можна видалити головного адміністратора'}), 400
     
-    # Видаляємо всі пов'язані дані
     Favorite.query.filter_by(user_id=user_id).delete()
     Review.query.filter_by(user_id=user_id).delete()
     Order.query.filter_by(user_id=user_id).update({'user_id': None})
@@ -1050,7 +1067,7 @@ def admin_update_review(review_id):
     if new_rating != old_rating:
         product = db.session.get(Product, review.product_id)
         if product:
-            product.rating_sum = product.rating_sum - old_rating + new_rating
+            product.rating_sum = max(0, product.rating_sum - old_rating + new_rating)
     
     review.rating = new_rating
     review.comment = new_comment
@@ -1066,7 +1083,6 @@ def admin_delete_review(review_id):
     
     product = db.session.get(Product, review.product_id)
     if product:
-        # Запобігаємо від'ємним значенням
         product.rating_sum = max(0, product.rating_sum - review.rating)
         product.rating_count = max(0, product.rating_count - 1)
     
@@ -1117,7 +1133,7 @@ def admin_get_database():
         }
     })
 
-# ============ API ДЛЯ КНОПКИ ТЕЛЕГРАМ ============
+# Telegram конфіг
 @app.route('/api/telegram-config', methods=['GET'])
 def get_telegram_config():
     return jsonify({
@@ -1125,7 +1141,7 @@ def get_telegram_config():
         'bot_link': TELEGRAM_BOT_LINK
     })
 
-# ============ ТЕСТОВИЙ МАРШРУТ ============
+# Тестовий маршрут
 @app.route('/api/test-telegram', methods=['GET'])
 def test_telegram():
     results = {}
@@ -1134,7 +1150,7 @@ def test_telegram():
         results[str(chat_id)] = 'sent' if success else 'failed'
     return jsonify({'status': 'ok', 'results': results})
 
-# ============ СТОРІНКИ ============
+# Сторінки
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -1149,8 +1165,9 @@ def admin_panel():
         return render_template('admin.html')
     return render_template('admin_login.html')
 
-# ============ ІНІЦІАЛІЗАЦІЯ БАЗИ ДАНИХ ============
+# Ініціалізація бази даних
 def init_db():
+    """Створює таблиці та додає початкові дані"""
     db.create_all()
     migrate_database()
 
@@ -1175,11 +1192,11 @@ def init_db():
     if not User.query.filter_by(username='admin').first():
         admin = User(username='admin', password=hash_password('admin123'), is_admin=True)
         db.session.add(admin)
-        print("✅ Адмін створений: admin / admin123")
+        logger.info("✅ Адмін створений: admin / admin123")
 
     db.session.commit()
 
-    # Test products
+    # Test products if none exist
     if Product.query.count() == 0:
         products = [
             Product(name='Худі KISIK Black', category='Худі', price=1299, sizes='S,M,L,XL', colors='Чорний',
@@ -1201,9 +1218,9 @@ def init_db():
         for p in products:
             db.session.add(p)
         db.session.commit()
-        print("✅ Тестові товари додані")
+        logger.info("✅ Тестові товари додані")
 
-    print("📊 БАЗА ДАНИХ ГОТОВА!")
+    logger.info("📊 БАЗА ДАНИХ ГОТОВА!")
 
 # ============ ЗАПУСК ============
 if __name__ == '__main__':
