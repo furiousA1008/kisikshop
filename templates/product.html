@@ -11,7 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0a0a0f; color: white; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+        body { background: #0a0a0f; color: white; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; min-height: 100vh; }
         .gradient-text { background: linear-gradient(135deg, #ff6b35, #ffb347); -webkit-background-clip: text; background-clip: text; color: transparent; }
         
         /* Галерея */
@@ -31,7 +31,6 @@
         }
         .main-image:hover { transform: scale(1.02); }
         
-        /* Мініатюри */
         .thumb-wrapper {
             position: relative;
             margin-top: 16px;
@@ -151,36 +150,27 @@
             border-color: transparent;
         }
         
-        /* Кнопка додавання в кошик */
         .add-to-cart-btn {
             background: linear-gradient(135deg, #ff6b35, #ffb347);
             transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
         }
         .add-to-cart-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 25px -5px rgba(255,107,53,0.4);
         }
-        .add-to-cart-btn:active { transform: translateY(1px); }
         
-        /* Відгуки */
         .review-card {
             background: rgba(255,255,255,0.05);
             border-radius: 20px;
             padding: 18px;
             margin-bottom: 14px;
-            transition: all 0.2s;
             border: 1px solid rgba(255,255,255,0.05);
         }
-        .review-card:hover { background: rgba(255,255,255,0.08); transform: translateX(4px); }
         
-        /* Зірки */
         .star-rating { display: flex; gap: 6px; cursor: pointer; }
         .star { font-size: 26px; color: #3a3a4a; transition: color 0.15s; }
         .star.active, .star:hover { color: #ffb347; }
         
-        /* Модалки */
         .modal {
             position: fixed;
             top: 0;
@@ -195,7 +185,6 @@
             justify-content: center;
         }
         
-        /* Toast */
         .toast {
             position: fixed;
             bottom: 24px;
@@ -240,7 +229,6 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* Telegram кнопка */
         @keyframes pulse-ring {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255,107,53,0.7); }
             70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(255,107,53,0); }
@@ -248,7 +236,6 @@
         }
         .telegram-btn { animation: pulse-ring 2s infinite; }
         
-        /* Select2 стилі */
         .select2-container--default .select2-selection--single {
             background-color: #1e293b;
             border: 1px solid rgba(255,255,255,0.1);
@@ -263,7 +250,6 @@
         .select2-dropdown { background-color: #1e293b; border-color: #ff6b35; border-radius: 16px; }
         .select2-search--dropdown { display: none !important; }
         
-        /* Підказки міст */
         .city-suggestions {
             position: absolute;
             top: 100%;
@@ -277,7 +263,6 @@
             z-index: 1000;
             display: none;
             border: 1px solid rgba(255,107,53,0.3);
-            box-shadow: 0 15px 30px -10px rgba(0,0,0,0.5);
         }
         .city-suggestions.show { display: block; }
         .city-suggestion-item {
@@ -299,13 +284,10 @@
         }
         .city-input-wrapper.loading .city-loading-icon { display: block; }
         
-        /* Адаптив для телефону */
         @media (max-width: 768px) {
             .tab-btn { padding: 8px 16px; font-size: 0.75rem; }
             .tab-content { padding: 16px; }
             .size-option { padding: 10px 16px; min-width: 55px; font-size: 0.8rem; }
-            .product-title { font-size: 1.5rem; }
-            .product-price { font-size: 1.8rem; }
         }
     </style>
 </head>
@@ -348,7 +330,7 @@
     </div>
 </header>
 
-<main class="max-w-7xl mx-auto px-4 py-6">
+<main class="max-w-7xl mx-auto px-4 py-6 pb-32">
     <div id="productContent"><div class="loading-spinner"></div></div>
 </main>
 
@@ -436,7 +418,7 @@
     function closeCheckout(){ document.getElementById('checkoutModal').classList.add('hidden'); $('#checkoutWarehouse').val('').prop('disabled',true).html('<option value="">Спочатку оберіть місто</option>'); document.getElementById('checkoutCity').value=''; currentCityRef=null; currentCityName=''; document.getElementById('citySuggestions').classList.remove('show'); }
     function initCityAutocomplete(){ const cityInput=document.getElementById('checkoutCity'), suggestionsDiv=document.getElementById('citySuggestions'), wrapper=document.getElementById('cityInputWrapper'); let timeout=null; cityInput.addEventListener('input',function(){ const q=this.value.trim(); if(timeout) clearTimeout(timeout); if(q.length<2){ suggestionsDiv.classList.remove('show'); return; } wrapper.classList.add('loading'); timeout=setTimeout(async()=>{ const cities=await searchCities(q); wrapper.classList.remove('loading'); if(cities.length){ suggestionsDiv.innerHTML=cities.map(c=>`<div class="city-suggestion-item" data-city-ref="${c.ref}" data-city-name="${c.name.replace(/'/g,"\\'")}"><div class="city-suggestion-name">${escapeHtml(c.name)}</div>${c.region?`<div class="city-suggestion-region">${escapeHtml(c.region)}</div>`:''}</div>`).join(''); suggestionsDiv.classList.add('show'); document.querySelectorAll('.city-suggestion-item').forEach(item=>{ item.addEventListener('click',async function(){ const ref=this.dataset.cityRef, name=this.dataset.cityName; cityInput.value=name; currentCityName=name; currentCityRef=ref; suggestionsDiv.classList.remove('show'); wrapper.classList.add('loading'); const whs=await getWarehouses(currentCityRef); wrapper.classList.remove('loading'); const ws=$('#checkoutWarehouse'); if(!whs.length){ ws.prop('disabled',true).html('<option value="">Немає відділень</option>'); showToast('❌ Відділень не знайдено',true); }else{ ws.prop('disabled',false).html('<option value="">Оберіть відділення</option>'+whs.map(w=>`<option value="${w.name}">${w.name}</option>`).join('')); showToast(`✅ ${whs.length} відділень у місті ${name}`); } }); }); }else{ suggestionsDiv.classList.remove('show'); } },500); }); document.addEventListener('click',e=>{ if(!cityInput.contains(e.target)&&!suggestionsDiv.contains(e.target)) suggestionsDiv.classList.remove('show'); }); }
     function initWarehouseSelect(){ $('#checkoutWarehouse').select2({ placeholder:"Оберіть відділення", dropdownParent:$('#checkoutModal'), width:'100%', minimumResultsForSearch:Infinity }); }
-    document.getElementById('checkoutForm').onsubmit=async(e)=>{ e.preventDefault(); const name=document.getElementById('checkoutName').value.trim(), phone=document.getElementById('checkoutPhone').value.trim(), email=document.getElementById('checkoutEmail').value.trim(), city=document.getElementById('checkoutCity').value.trim(), warehouse=$('#checkoutWarehouse').val(), payment=document.querySelector('input[name="paymentMethod"]:checked').value; if(!name||!phone||!city||!warehouse||warehouse==='Спочатку оберіть місто'){ showToast('❌ Заповніть всі поля',true); return; } if(!currentCityRef){ showToast('❌ Оберіть місто зі списку',true); return; } const btn=e.target.querySelector('button[type="submit"]')||document.querySelector('#checkoutForm button[type="submit"]'); btn.disabled=true; btn.textContent='⏳ Відправка...'; try{ const data=await api('/api/checkout',{method:'POST',body:JSON.stringify({name,phone,email,city,warehouse_address:warehouse,payment_method:payment})}); showToast(`✅ Замовлення №${data.order_number} створено!`); closeCheckout(); await loadCart(); renderCart(); document.getElementById('checkoutName').value=''; document.getElementById('checkoutPhone').value=''; document.getElementById('checkoutEmail').value=''; }catch(e){ showToast('❌ '+e.message,true); } finally{ btn.disabled=false; btn.textContent='✅ Підтвердити замовлення'; } };
+    document.getElementById('checkoutForm').onsubmit=async(e)=>{ e.preventDefault(); const name=document.getElementById('checkoutName').value.trim(), phone=document.getElementById('checkoutPhone').value.trim(), email=document.getElementById('checkoutEmail').value.trim(), city=document.getElementById('checkoutCity').value.trim(), warehouse=$('#checkoutWarehouse').val(), payment=document.querySelector('input[name="paymentMethod"]:checked').value; if(!name||!phone||!city||!warehouse||warehouse==='Спочатку оберіть місто'){ showToast('❌ Заповніть всі поля',true); return; } if(!currentCityRef){ showToast('❌ Оберіть місто зі списку',true); return; } const btn=document.querySelector('#checkoutForm button[type="submit"]'); btn.disabled=true; btn.textContent='⏳ Відправка...'; try{ const data=await api('/api/checkout',{method:'POST',body:JSON.stringify({name,phone,email,city,warehouse_address:warehouse,payment_method:payment})}); showToast(`✅ Замовлення №${data.order_number} створено!`); closeCheckout(); await loadCart(); renderCart(); document.getElementById('checkoutName').value=''; document.getElementById('checkoutPhone').value=''; document.getElementById('checkoutEmail').value=''; }catch(e){ showToast('❌ '+e.message,true); } finally{ btn.disabled=false; btn.textContent='✅ Підтвердити замовлення'; } };
     async function showFavorites(){ if(!currentUser){ showToast('Увійдіть в акаунт',true); return; } try{ const ids=await api('/api/favorites'); if(!ids.length) document.getElementById('favoritesList').innerHTML='<div class="text-center py-10 text-gray-400">❤️ Немає обраних товарів</div>'; else{ const prods=await Promise.all(ids.map(id=>api(`/api/products/${id}`))); document.getElementById('favoritesList').innerHTML=prods.map(p=>`<div class="flex gap-4 p-4 bg-white/5 rounded-2xl mb-3 cursor-pointer" onclick="location.href='/product/${p.id}'"><img src="${p.photos[0]||'https://placehold.co/80'}" class="w-20 h-20 rounded-xl object-cover"><div class="flex-1"><h4 class="font-bold">${escapeHtml(p.name)}</h4><p class="text-orange-400 font-bold">${p.price} грн</p><div class="flex text-yellow-400 text-sm">${renderStars(p.rating_avg)}</div></div></div>`).join(''); } document.getElementById('favoritesModal').classList.remove('hidden'); }catch(e){ showToast('❌ '+e.message,true); } }
     async function showOrders(){ if(!currentUser){ showToast('Увійдіть в акаунт',true); return; } try{ const orders=await api('/api/orders'); if(!orders.length) document.getElementById('ordersList').innerHTML='<div class="text-center py-10 text-gray-400">📦 У вас ще немає замовлень</div>'; else{ document.getElementById('ordersList').innerHTML=orders.map(o=>`<div class="p-4 bg-white/5 rounded-2xl mb-3"><div class="flex justify-between"><span class="font-bold">№${o.order_number}</span><span class="text-orange-400">${o.total_price} грн</span></div><p class="text-sm text-gray-400">${new Date(o.created_at).toLocaleDateString()}</p><span class="inline-block mt-2 px-2 py-1 bg-orange-500/20 rounded-lg text-xs">${o.status==='new'?'Нове':o.status==='completed'?'Виконано':o.status}</span></div>`).join(''); } document.getElementById('ordersModal').classList.remove('hidden'); }catch(e){ showToast('❌ '+e.message,true); } }
     function closeFavorites(){ document.getElementById('favoritesModal').classList.add('hidden'); }
